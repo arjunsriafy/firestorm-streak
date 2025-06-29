@@ -1,0 +1,14 @@
+RewriteEngine On
+
+# If request is NOT a real file or directory
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# Match /admin/something → index.php?user=admin&action=something
+RewriteRule ^admin/([^/?]+)$ index.php?user=admin&action=$1 [QSA,L]
+
+# Match /app/something → index.php?user=app&action=something
+RewriteRule ^app/([^/?]+)$ index.php?user=app&action=$1 [QSA,L]
+
+# Optionally, fallback for /something → ?method=something
+RewriteRule ^([^/?]+)$ index.php?method=$1 [QSA,L]

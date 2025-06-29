@@ -1,8 +1,14 @@
 FROM php:8.2-apache
 
-RUN apt-get update && apt-get install -y libcurl4-openssl-dev && docker-php-ext-install curl
+# Enable Apache mod_rewrite
+RUN a2enmod rewrite
 
+# Copy your code to the container
 COPY . /var/www/html/
 
-ENV PORT=8080
-EXPOSE 8080
+# Set correct working dir and permissions
+WORKDIR /var/www/html
+RUN chown -R www-data:www-data /var/www/html
+
+# Enable .htaccess override
+RUN sed -i 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf
