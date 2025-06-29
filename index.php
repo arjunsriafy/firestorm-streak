@@ -301,10 +301,17 @@
             $streak_marked = array_column($allStreakLogsApp, 'created_at');
             rsort($streak_marked);
 
-            $maxCount = max(array_map('intval', array_column($allStreakLogsApp, 'count')));
-            $allStreaksApp[0]["longest_streak"] = $maxCount;
-            $allStreaksApp[0]["current_streak"] = (int)$allStreakLogsApp[0]["count"];
-            $allStreaksApp[0]["streak_marked"] = $streak_marked;
+            if(empty($allStreakLogsApp)){
+                $allStreaksApp[0]["longest_streak"] = 0;
+                $allStreaksApp[0]["current_streak"] = 0;
+                $allStreaksApp[0]["streak_marked"] = $streak_marked;
+            }
+            else{
+                $maxCount = max(array_map('intval', array_column($allStreakLogsApp, 'count')));
+                $allStreaksApp[0]["longest_streak"] = $maxCount;
+                $allStreaksApp[0]["current_streak"] = (int)$allStreakLogsApp[0]["count"];
+                $allStreaksApp[0]["streak_marked"] = $streak_marked;
+            }
             // $allStreaksApp[0]["restore_streak_saved"] = 0;
 
             $allStreaks = array_map(function($streak) {
