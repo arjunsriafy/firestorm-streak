@@ -167,14 +167,22 @@
         case "app-log-a-streak":
             // Log a streak
             $baseUrl = "https://$projectId.supabase.co/rest/v1/streakLog";
-            $payloadToInsert = array('appname' => $_GET['appname'], 'userId' => $_GET['userId'], 'streakSku' => $_GET['streakSku']);
+            $streakSku = '';
+            if(isset($_GET['streakSku'])){
+                $streakSku = $_GET['streakSku'];
+            }
+            else{
+                $baseUrlMilestones = "https://$projectId.supabase.co/rest/v1/milestones";
+                $milestonesOfApps = getStreakSkuOfAMilestone($baseUrlMilestones, $headers, array("appname" => $_GET['appname']));
+                $streakSku = $milestonesOfApps[0]["streakSku"];
+            }
+            $payloadToInsert = array('appname' => $_GET['appname'], 'userId' => $_GET['userId'], 'streakSku' => $streakSku);
             $lang = $_GET['lang'];
-            unset($_GET['lang']);
             $baseUrlStreaks =  "https://$projectId.supabase.co/rest/v1/streaks";
-            $getStreakData = getStreakData($baseUrlStreaks, $headers, array('appname' => $_GET['appname'], 'sku' => $_GET['streakSku']));
+            $getStreakData = getStreakData($baseUrlStreaks, $headers, array('sku' => $streakSku));
             if ($getStreakData) {
                 if(isset($getStreakData[0]['streakType']) && $getStreakData[0]['streakType'] == 'daily'){
-                    $existsTodayStreak = getStreakLogData($baseUrl, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId'], 'streakSku' => $_GET['streakSku']));
+                    $existsTodayStreak = getStreakLogData($baseUrl, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId'], 'streakSku' => $streakSku));
                     if ($existsTodayStreak) {
                         http_response_code(403);
                         echo json_encode(array("status" => "error", "message" => "This streak is already marked today"));
@@ -187,7 +195,7 @@
                 echo json_encode(array("status" => "error", "message" => "This streak not exist for this app"));
                 exit;
             }
-            $checkYesterdayStreakLogged = checkYesterdayStreakLogged($baseUrl, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId'], 'streakSku' => $_GET['streakSku']));
+            $checkYesterdayStreakLogged = checkYesterdayStreakLogged($baseUrl, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId'], 'streakSku' => $streakSku));
             if ($checkYesterdayStreakLogged) {
                 $count = (int)$checkYesterdayStreakLogged[0]['count'] + 1;
             }
@@ -207,7 +215,7 @@
             $payloadToInsert['count'] = $count;
             $new = logStreak($baseUrl, $headers, $payloadToInsert);
             $baseUrlMilestones = "https://$projectId.supabase.co/rest/v1/milestones";
-            $checkAnyMilestoneExist = checkAnyMilestoneExist($baseUrlMilestones, $headers, array('streakSku' => $_GET['streakSku'], 'streakCount' => $count));
+            $checkAnyMilestoneExist = checkAnyMilestoneExist($baseUrlMilestones, $headers, array('streakSku' => $streakSku, 'streakCount' => $count));
             if ($checkAnyMilestoneExist) {
                 $baseUrlUserMilestones = "https://$projectId.supabase.co/rest/v1/userMilestones";
                 $insertUserMileStonePayload = array(
@@ -1021,5 +1029,29 @@
         curl_close($ch);
     
         return json_decode($response, true);
+    }
+
+    // Get next streak count
+    function getStreakSkuOfAMilestone($url, $headers, $filters) {
+        foreach ($filters as $key => $value) {
+            if (is_array($value)) {
+                foreach ($value as $operator => $v) {
+                    $queryParts[] = "$key=" . $operator . "." . urlencode($v);
+                }
+            } else {
+                $queryParts[] = "$key=eq." . urlencode($value);
+            }
+        }
+        $queryUrl = "$url?" . implode('&', $queryParts);
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $queryUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        $response = curl_exec($ch);
+        curl_close($ch);
+    
+        $data = json_decode($response, true);
+        return !empty($data) ? $data : false;
     }
 ?>
