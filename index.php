@@ -39,6 +39,9 @@
     ];
     $langs = array('fr', 'it', 'de', 'es', 'pl');
     switch ($method) {
+        case "app-health-check":
+            echo json_encode(array("status" => "success", "message" => "Health check running"));
+            break;
         // APIs for app
         case "app-log-a-streak":
             // Log a streak
