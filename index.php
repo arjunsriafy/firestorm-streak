@@ -4,7 +4,7 @@
         ini_set('display_startup_errors', 1);
         error_reporting(E_ALL);
     } else {
-        // On staging/production: hide errors
+        // On staging/production: hide error
         ini_set('display_errors', 0);
         error_reporting(0);
     }
@@ -43,6 +43,126 @@
         case "app-health-check":
             echo json_encode(array("status" => "success", "message" => "Health check running"));
             break;
+        // // Admin streaks
+        // case "admin-get-all-streaks":
+        //     // Read all streaks admin
+        //     $baseUrl = "https://$projectId.supabase.co/rest/v1/streaks";
+        //     $allStreaksAdmin = getAllStreaksAdmin($baseUrl, $headers);
+        //     echo json_encode($allStreaksAdmin);
+        // break;
+        // case "admin-insert-streak":
+        //     // Insert streak admin
+        //     $baseUrl = "https://$projectId.supabase.co/rest/v1/streaks";
+        //     $exists = checkStreakExists($baseUrl, $headers, array('sku' => $inputPayload['sku']));
+        //     if ($exists) {
+        //         http_response_code(403);
+        //         echo json_encode(array("status" => "error", "message" => "Streak already exist with the same sku"));
+        //         exit;
+        //     } else {
+        //         $translatedArr = array();
+        //         foreach($langs as $lang){
+        //             $translatedArr[$lang]['name'] = translateText($inputPayload['name'], $lang);
+        //             $translatedArr[$lang]['description'] = translateText($inputPayload['description'], $lang);
+        //         }
+        //         $payloadToInsert = $inputPayload;
+        //         $payloadToInsert['localizations'] = json_encode($translatedArr);
+        //         $new = insertStreakAdmin($baseUrl, $headers, $payloadToInsert);
+        //         echo json_encode(array("status" => "success", "message" => "Streak inserted succcesfully", "response" => $new));
+        //     }
+        // break;
+        // case "admin-update-streak":
+        //     // Update streak admin
+        //     $baseUrl = "https://$projectId.supabase.co/rest/v1/streaks";
+        //     $id = $inputPayload['id'];
+        //     $exists = checkStreakExists($baseUrl, $headers, array('sku' => $inputPayload['sku'], 'id' => ['not.eq' => $id]));
+        //     if ($exists) {
+        //         http_response_code(403);
+        //         echo json_encode(array("status" => "error", "message" => "Another streak exist with the same sku"));
+        //         exit;
+        //     } else {
+        //         $translatedArr = array();
+        //         foreach($langs as $lang){
+        //             $translatedArr[$lang]['name'] = translateText($inputPayload['name'], $lang);
+        //             $translatedArr[$lang]['description'] = translateText($inputPayload['description'], $lang);
+        //         }
+        //         $payloadToInsert = $inputPayload;
+        //         $payloadToInsert['localizations'] = json_encode($translatedArr);
+        //         $new = updateStreakAdmin($baseUrl, $headers, $id, $payloadToInsert);
+        //         echo json_encode(array("status" => "success", "message" => "Streak updated succcesfully", "response" => $new));
+        //     }
+        // break;
+        // case "admin-delete-streak":
+        //     // Delete streak admin
+        //     $baseUrl = "https://$projectId.supabase.co/rest/v1/streaks";
+        //     $id = $_GET['id'];
+        //     $new = deleteStreakAdmin($baseUrl, $headers, $id);
+        //     echo json_encode(array("status" => "success", "message" => "Streak deleted succesfully"));
+        // break;
+
+        // // Admin milestones
+        // case "admin-get-all-milestones":
+        //     // Read all milestones admin
+        //     $baseUrl = "https://$projectId.supabase.co/rest/v1/milestones";
+        //     $allMilestonesAdmin = getAllMilestonesAdmin($baseUrl, $headers);
+        //     echo json_encode($allMilestonesAdmin);
+        // break;
+        // case "admin-insert-milestone":
+        //     // Insert milestone admin
+        //     $baseUrl = "https://$projectId.supabase.co/rest/v1/milestones";
+        //     $exists = checkMilestoneExists($baseUrl, $headers, array('sku' => $inputPayload['sku'], 'streakSku' => $inputPayload['streakSku'], 'streakId' => $inputPayload['streakId']));
+        //     if ($exists) {
+        //         http_response_code(403);
+        //         echo json_encode(array("status" => "error", "message" => "Milestone already exist with the same sku"));
+        //         exit;
+        //     } else {
+        //         $translatedArr = array();
+        //         foreach($langs as $lang){
+        //             $translatedArr[$lang]['name'] = translateText($inputPayload['name'], $lang);
+        //             $translatedArr[$lang]['description'] = translateText($inputPayload['description'], $lang);
+        //         }
+        //         $payloadToInsert = $inputPayload;
+        //         $payloadToInsert['localizations'] = json_encode($translatedArr);
+        //         $baseUrlStorage = "https://$projectId.supabase.co";
+        //         $bucket = "firestorm";
+        //         $imageUrl = uploadImageToStorage($baseUrlStorage, $apiKey, $bucket, $inputPayload['sku'], $inputPayloadFiles);
+        //         $payloadToInsert['imageColoredUrl'] = $imageUrl;
+        //         $new = insertMilestoneAdmin($baseUrl, $headers, $payloadToInsert);
+        //         echo json_encode(array("status" => "success", "message" => "Milestone inserted succcesfully", "response" => $new));
+        //     }
+        // break;
+        // case "admin-update-milestone":
+        //     // Update milestone admin
+        //     $baseUrl = "https://$projectId.supabase.co/rest/v1/milestones";
+        //     $id = $inputPayload['id'];
+        //     $exists = checkMilestoneExists($baseUrl, $headers, array('sku' => $inputPayload['sku'], 'streakSku' => $inputPayload['streakSku'], 'streakId' => $inputPayload['streakId'], 'id' => ['not.eq' => $id]));
+        //     if ($exists) {
+        //         http_response_code(403);
+        //         echo json_encode(array("status" => "error", "message" => "Another milestone exist with the same sku"));
+        //         exit;
+        //     } else {
+        //         $translatedArr = array();
+        //         foreach($langs as $lang){
+        //             $translatedArr[$lang]['name'] = translateText($inputPayload['name'], $lang);
+        //             $translatedArr[$lang]['description'] = translateText($inputPayload['description'], $lang);
+        //         }
+        //         $payloadToInsert = $inputPayload;
+        //         $payloadToInsert['localizations'] = json_encode($translatedArr);
+        //         $baseUrlStorage = "https://$projectId.supabase.co";
+        //         $bucket = "firestorm";
+        //         $imageUrl = uploadImageToStorage($baseUrlStorage, $apiKey, $bucket, $inputPayload['sku'], $inputPayloadFiles);
+        //         $payloadToInsert['imageColoredUrl'] = $imageUrl;
+        //         $new = updateMilestoneAdmin($baseUrl, $headers, $id, $payloadToInsert);
+        //         echo json_encode(array("status" => "success", "message" => "Milestone updated succcesfully", "response" => $new));
+        //     }
+        // break;
+        // case "admin-delete-milestone":
+        //     // Delete milestone admin
+        //     $baseUrl = "https://$projectId.supabase.co/rest/v1/milestones";
+        //     $id = $inputPayload['id'];
+        //     $new = deleteMilestoneAdmin($baseUrl, $headers, $id);
+        //     echo json_encode(array("status" => "success", "message" => "Milestone deleted succesfully"));
+        // break;
+
         // APIs for app
         case "app-log-a-streak":
             // Log a streak
@@ -154,6 +274,9 @@
                     $i++;
                 }
             }
+            usort($allMilestonesApp, function ($a, $b) {
+                return (int)$a['streakCount'] - (int)$b['streakCount'];
+            });
             $allMilestonesApp = array_map(function($milestone) {
                 unset($milestone['localizations']);
                 return $milestone;
@@ -174,16 +297,22 @@
             $allStreaksApp = getAllStreaksApp($baseUrlStreaks, $headers, array('id' => $streakId));
             $baseUrlStreakLogs = "https://$projectId.supabase.co/rest/v1/streakLog";
             $allStreakLogsApp = getAllStreakLogsApp($baseUrlStreakLogs, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId'], 'order' => ['created_at' => 'desc']));
+
+            $streak_marked = array_column($allStreakLogsApp, 'created_at');
+            rsort($streak_marked);
+
             $maxCount = max(array_map('intval', array_column($allStreakLogsApp, 'count')));
             $allStreaksApp[0]["longest_streak"] = $maxCount;
-            $allStreaksApp[0]["current_streak"] = $allStreakLogsApp[0]["count"];
+            $allStreaksApp[0]["current_streak"] = (int)$allStreakLogsApp[0]["count"];
+            $allStreaksApp[0]["streak_marked"] = $streak_marked;
+            // $allStreaksApp[0]["restore_streak_saved"] = 0;
 
             $allStreaks = array_map(function($streak) {
                 unset($streak['localizations']);
                 return $streak;
             }, $allStreaksApp);
             
-            echo json_encode(array("streaks" => $allStreaks[0], "milestones" => $milestones));
+            echo json_encode(array("streaks" => $allStreaks[0], "milestones" => $milestones, "restore_streak_saved" => 0));
             
             exit;
 
