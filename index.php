@@ -292,34 +292,41 @@
             usort($milestones, fn($a, $b) => $b['isCompleted'] <=> $a['isCompleted']);
 
             // Read all streaks for an app
-            $streakId = $milestones[0]["streakId"];
-            $baseUrlStreaks = "https://$projectId.supabase.co/rest/v1/streaks";
-            $allStreaksApp = getAllStreaksApp($baseUrlStreaks, $headers, array('id' => $streakId));
-            $baseUrlStreakLogs = "https://$projectId.supabase.co/rest/v1/streakLog";
-            $allStreakLogsApp = getAllStreakLogsApp($baseUrlStreakLogs, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId'], 'order' => ['created_at' => 'desc']));
-
-            $streak_marked = array_column($allStreakLogsApp, 'created_at');
-            rsort($streak_marked);
-
-            if(empty($allStreakLogsApp)){
-                $allStreaksApp[0]["longest_streak"] = 0;
-                $allStreaksApp[0]["current_streak"] = 0;
-                $allStreaksApp[0]["streak_marked"] = $streak_marked;
-            }
-            else{
-                $maxCount = max(array_map('intval', array_column($allStreakLogsApp, 'count')));
-                $allStreaksApp[0]["longest_streak"] = $maxCount;
-                $allStreaksApp[0]["current_streak"] = (int)$allStreakLogsApp[0]["count"];
-                $allStreaksApp[0]["streak_marked"] = $streak_marked;
-            }
-            // $allStreaksApp[0]["restore_streak_saved"] = 0;
-
-            $allStreaks = array_map(function($streak) {
-                unset($streak['localizations']);
-                return $streak;
-            }, $allStreaksApp);
             
-            echo json_encode(array("streaks" => $allStreaks[0], "milestones" => $milestones, "restore_streak_saved" => 0));
+            $streaks = array();
+            if(isset($milestones[0])){
+                $streakId = $milestones[0]["streakId"];
+                $baseUrlStreaks = "https://$projectId.supabase.co/rest/v1/streaks";
+                $allStreaksApp = getAllStreaksApp($baseUrlStreaks, $headers, array('id' => $streakId));
+                $baseUrlStreakLogs = "https://$projectId.supabase.co/rest/v1/streakLog";
+                $allStreakLogsApp = getAllStreakLogsApp($baseUrlStreakLogs, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId'], 'order' => ['created_at' => 'desc']));
+    
+                $streak_marked = array_column($allStreakLogsApp, 'created_at');
+                rsort($streak_marked);
+    
+                if(empty($allStreakLogsApp)){
+                    $allStreaksApp[0]["longest_streak"] = 0;
+                    $allStreaksApp[0]["current_streak"] = 0;
+                    $allStreaksApp[0]["streak_marked"] = $streak_marked;
+                }
+                else{
+                    $maxCount = max(array_map('intval', array_column($allStreakLogsApp, 'count')));
+                    $allStreaksApp[0]["longest_streak"] = $maxCount;
+                    $allStreaksApp[0]["current_streak"] = (int)$allStreakLogsApp[0]["count"];
+                    $allStreaksApp[0]["streak_marked"] = $streak_marked;
+                }
+
+                // $allStreaksApp[0]["restore_streak_saved"] = 0;
+
+                $allStreaks = array_map(function($streak) {
+                    unset($streak['localizations']);
+                    return $streak;
+                }, $allStreaksApp);
+
+                $streaks = $allStreaks[0];
+            }
+            
+            echo json_encode(array("streaks" => $streaks, "milestones" => $milestones, "restore_streak_saved" => 0));
             
             exit;
 
