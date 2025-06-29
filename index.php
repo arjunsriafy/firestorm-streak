@@ -1,5 +1,5 @@
 <?php
-    if (strpos($_SERVER['HTTP_HOST'], 'localhost') !== false) {
+    if (strpos($_SERVER['HTTP_HOST'], 'localhost') !== false || isset($_GET['debug'])) {
         ini_set('display_errors', 1);
         ini_set('display_startup_errors', 1);
         error_reporting(E_ALL);
@@ -39,126 +39,6 @@
     ];
     $langs = array('fr', 'it', 'de', 'es', 'pl');
     switch ($method) {
-        // Admin streaks
-        case "admin-get-all-streaks":
-            // Read all streaks admin
-            $baseUrl = "https://$projectId.supabase.co/rest/v1/streaks";
-            $allStreaksAdmin = getAllStreaksAdmin($baseUrl, $headers);
-            echo json_encode($allStreaksAdmin);
-        break;
-        case "admin-insert-streak":
-            // Insert streak admin
-            $baseUrl = "https://$projectId.supabase.co/rest/v1/streaks";
-            $exists = checkStreakExists($baseUrl, $headers, array('sku' => $inputPayload['sku']));
-            if ($exists) {
-                http_response_code(403);
-                echo json_encode(array("status" => "error", "message" => "Streak already exist with the same sku"));
-                exit;
-            } else {
-                $translatedArr = array();
-                foreach($langs as $lang){
-                    $translatedArr[$lang]['name'] = translateText($inputPayload['name'], $lang);
-                    $translatedArr[$lang]['description'] = translateText($inputPayload['description'], $lang);
-                }
-                $payloadToInsert = $inputPayload;
-                $payloadToInsert['localizations'] = json_encode($translatedArr);
-                $new = insertStreakAdmin($baseUrl, $headers, $payloadToInsert);
-                echo json_encode(array("status" => "success", "message" => "Streak inserted succcesfully", "response" => $new));
-            }
-        break;
-        case "admin-update-streak":
-            // Update streak admin
-            $baseUrl = "https://$projectId.supabase.co/rest/v1/streaks";
-            $id = $inputPayload['id'];
-            $exists = checkStreakExists($baseUrl, $headers, array('sku' => $inputPayload['sku'], 'id' => ['not.eq' => $id]));
-            if ($exists) {
-                http_response_code(403);
-                echo json_encode(array("status" => "error", "message" => "Another streak exist with the same sku"));
-                exit;
-            } else {
-                $translatedArr = array();
-                foreach($langs as $lang){
-                    $translatedArr[$lang]['name'] = translateText($inputPayload['name'], $lang);
-                    $translatedArr[$lang]['description'] = translateText($inputPayload['description'], $lang);
-                }
-                $payloadToInsert = $inputPayload;
-                $payloadToInsert['localizations'] = json_encode($translatedArr);
-                $new = updateStreakAdmin($baseUrl, $headers, $id, $payloadToInsert);
-                echo json_encode(array("status" => "success", "message" => "Streak updated succcesfully", "response" => $new));
-            }
-        break;
-        case "admin-delete-streak":
-            // Delete streak admin
-            $baseUrl = "https://$projectId.supabase.co/rest/v1/streaks";
-            $id = $_GET['id'];
-            $new = deleteStreakAdmin($baseUrl, $headers, $id);
-            echo json_encode(array("status" => "success", "message" => "Streak deleted succesfully"));
-        break;
-
-        // Admin milestones
-        case "admin-get-all-milestones":
-            // Read all milestones admin
-            $baseUrl = "https://$projectId.supabase.co/rest/v1/milestones";
-            $allMilestonesAdmin = getAllMilestonesAdmin($baseUrl, $headers);
-            echo json_encode($allMilestonesAdmin);
-        break;
-        case "admin-insert-milestone":
-            // Insert milestone admin
-            $baseUrl = "https://$projectId.supabase.co/rest/v1/milestones";
-            $exists = checkMilestoneExists($baseUrl, $headers, array('sku' => $inputPayload['sku'], 'streakSku' => $inputPayload['streakSku'], 'streakId' => $inputPayload['streakId']));
-            if ($exists) {
-                http_response_code(403);
-                echo json_encode(array("status" => "error", "message" => "Milestone already exist with the same sku"));
-                exit;
-            } else {
-                $translatedArr = array();
-                foreach($langs as $lang){
-                    $translatedArr[$lang]['name'] = translateText($inputPayload['name'], $lang);
-                    $translatedArr[$lang]['description'] = translateText($inputPayload['description'], $lang);
-                }
-                $payloadToInsert = $inputPayload;
-                $payloadToInsert['localizations'] = json_encode($translatedArr);
-                $baseUrlStorage = "https://$projectId.supabase.co";
-                $bucket = "firestorm";
-                $imageUrl = uploadImageToStorage($baseUrlStorage, $apiKey, $bucket, $inputPayload['sku'], $inputPayloadFiles);
-                $payloadToInsert['imageColoredUrl'] = $imageUrl;
-                $new = insertMilestoneAdmin($baseUrl, $headers, $payloadToInsert);
-                echo json_encode(array("status" => "success", "message" => "Milestone inserted succcesfully", "response" => $new));
-            }
-        break;
-        case "admin-update-milestone":
-            // Update milestone admin
-            $baseUrl = "https://$projectId.supabase.co/rest/v1/milestones";
-            $id = $inputPayload['id'];
-            $exists = checkMilestoneExists($baseUrl, $headers, array('sku' => $inputPayload['sku'], 'streakSku' => $inputPayload['streakSku'], 'streakId' => $inputPayload['streakId'], 'id' => ['not.eq' => $id]));
-            if ($exists) {
-                http_response_code(403);
-                echo json_encode(array("status" => "error", "message" => "Another milestone exist with the same sku"));
-                exit;
-            } else {
-                $translatedArr = array();
-                foreach($langs as $lang){
-                    $translatedArr[$lang]['name'] = translateText($inputPayload['name'], $lang);
-                    $translatedArr[$lang]['description'] = translateText($inputPayload['description'], $lang);
-                }
-                $payloadToInsert = $inputPayload;
-                $payloadToInsert['localizations'] = json_encode($translatedArr);
-                $baseUrlStorage = "https://$projectId.supabase.co";
-                $bucket = "firestorm";
-                $imageUrl = uploadImageToStorage($baseUrlStorage, $apiKey, $bucket, $inputPayload['sku'], $inputPayloadFiles);
-                $payloadToInsert['imageColoredUrl'] = $imageUrl;
-                $new = updateMilestoneAdmin($baseUrl, $headers, $id, $payloadToInsert);
-                echo json_encode(array("status" => "success", "message" => "Milestone updated succcesfully", "response" => $new));
-            }
-        break;
-        case "admin-delete-milestone":
-            // Delete milestone admin
-            $baseUrl = "https://$projectId.supabase.co/rest/v1/milestones";
-            $id = $inputPayload['id'];
-            $new = deleteMilestoneAdmin($baseUrl, $headers, $id);
-            echo json_encode(array("status" => "success", "message" => "Milestone deleted succesfully"));
-        break;
-
         // APIs for app
         case "app-log-a-streak":
             // Log a streak
@@ -188,6 +68,7 @@
                 $count = (int)$checkYesterdayStreakLogged[0]['count'] + 1;
             }
             else{
+                // Condition for pause
                 // $baseUrlPaused = "https://$projectId.supabase.co/rest/v1/streakPause";
                 // $count = getUpdatedStreakCount($baseUrl, $baseUrlPaused, $headers, array(
                 //     'appname' => $_GET['appname'],
@@ -195,6 +76,7 @@
                 //     'streakSku' => $_GET['streakSku']
                 // ));
                 // echo $count;exit;
+
                 $count = 1;
             }
             // echo $count;exit;
@@ -251,6 +133,60 @@
             }
         break;
         case "app-get-all-streaks":
+            // Read all milestones of app
+            $baseUrlMilestones = "https://$projectId.supabase.co/rest/v1/milestones";
+            $allMilestonesApp = getAllMilestonesApp($baseUrlMilestones, $headers, $_GET['appname']);
+            
+            if(isset($_GET['lang']) && $_GET['lang'] != "en"){
+                $i = 0;
+                foreach ($allMilestonesApp as $milestone) {
+                    if (!empty($milestone['localizations'])) {
+                        $localizations = json_decode($milestone['localizations'], true);
+                        if (isset($localizations[$_GET['lang']])) {
+                            $allMilestonesApp[$i]['name'] = $localizations[$_GET['lang']]['name'];
+                            $allMilestonesApp[$i]['description'] = $localizations[$_GET['lang']]['description'];
+                        }
+                    }
+                    $i++;
+                }
+            }
+            $allMilestonesApp = array_map(function($milestone) {
+                unset($milestone['localizations']);
+                return $milestone;
+            }, $allMilestonesApp);
+
+            $baseUrlUserMilestones = "https://$projectId.supabase.co/rest/v1/userMilestones";
+            $allAchievedMilestonesOfUser = getAllAchievedMilestonesOfUser($baseUrlUserMilestones, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId']));
+            $completedIds = array_column($allAchievedMilestonesOfUser, 'milestoneId');
+            $milestones = array_map(function ($item) use ($completedIds) {
+                $item['isCompleted'] = in_array((string)$item['id'], $completedIds) ? "1" : "0";
+                return $item;
+            }, $allMilestonesApp);
+            usort($milestones, fn($a, $b) => $b['isCompleted'] <=> $a['isCompleted']);
+
+            // Read all streaks for an app
+            $streakId = $milestones[0]["streakId"];
+            $baseUrlStreaks = "https://$projectId.supabase.co/rest/v1/streaks";
+            $allStreaksApp = getAllStreaksApp($baseUrlStreaks, $headers, array('id' => $streakId));
+            $baseUrlStreakLogs = "https://$projectId.supabase.co/rest/v1/streakLog";
+            $allStreakLogsApp = getAllStreakLogsApp($baseUrlStreakLogs, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId'], 'order' => ['created_at' => 'desc']));
+            $maxCount = max(array_map('intval', array_column($allStreakLogsApp, 'count')));
+            $allStreaksApp[0]["longest_streak"] = $maxCount;
+            $allStreaksApp[0]["current_streak"] = $allStreakLogsApp[0]["count"];
+
+            $allStreaks = array_map(function($streak) {
+                unset($streak['localizations']);
+                return $streak;
+            }, $allStreaksApp);
+            
+            echo json_encode(array("streaks" => $allStreaks[0], "milestones" => $milestones));
+            
+            exit;
+
+
+
+
+
             // Read all streaks for an app
             $baseUrlStreaks = "https://$projectId.supabase.co/rest/v1/streaks";
             $allStreaksApp = getAllStreaksApp($baseUrlStreaks, $headers, array('appname' => $_GET['appname']));
@@ -271,6 +207,11 @@
                 $streak['longestStreak'] = $maxCounts[$streak['sku']] ?? 0;
                 return $streak;
             }, $allStreaksApp);
+
+            $allStreaks = array_map(function($streak) {
+                unset($streak['localizations']);
+                return $streak;
+            }, $allStreaks);
 
             $baseUrlMilestones = "https://$projectId.supabase.co/rest/v1/milestones";
             $allMilestonesApp = getAllMilestonesApp($baseUrlMilestones, $headers, $_GET['appname']);
@@ -669,7 +610,7 @@
 
     // All milestones for an app
     function getAllMilestonesApp($url, $headers, $appname) {
-        $queryUrl = "$url?select=*,streaks!inner(appname)&streaks.appname=eq.$appname";
+        $queryUrl = "$url?appname=eq.$appname";
 
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $queryUrl);
@@ -713,7 +654,8 @@
                 $queryParts[] = "$key=eq." . urlencode($value);
             }
         }
-        $queryUrl = "$url?" . implode('&', $queryParts) . "&select=streakSku,count";
+        $queryUrl = "$url?" . implode('&', $queryParts);
+        // echo $queryUrl;exit;
 
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $queryUrl);
@@ -804,7 +746,7 @@
             $pausedUrl = "$supabaseUrl/rest/v1/paused?userId=eq.$userId&appname=eq.$appname&order=created_at.desc&limit=1";
             $pausedRes = json_decode(httpGet($pausedUrl, $headers), true);
     
-            if (!empty($pausedRes) && $pausedRes[0]['is_paused']) {
+            if (!empty($pausedRes) && $pausedRes[0]['is_pause']) {
                 $pauseDate = new DateTime($pausedRes[0]['created_at']);
     
                 // Pause made AFTER next expected log → reset
@@ -856,7 +798,7 @@
         $appname = urlencode($params['appname']);
         $userId = urlencode($params['userId']);
     
-        $url = "$baseUrl?appname=eq.$appname&userId=eq.$userId&select=is_paused,paused_at";
+        $url = "$baseUrl?appname=eq.$appname&userId=eq.$userId&select=is_pause,triggered_at";
     
         $ch = curl_init();
         curl_setopt_array($ch, [
@@ -884,28 +826,34 @@
     
         $lastLoggedDate = new DateTime($lastStreakLog[0]['created_at']);
         $currentCount = (int)$lastStreakLog[0]['count'];
-    
-        // 2. Check paused status
         $pauseData = checkIfPaused($baseUrlPaused, $headers, $params);
-        echo json_encode($pauseData);exit;
-        $isPaused = isset($pauseData[0]['is_paused']) && $pauseData[0]['is_paused'] == 1;
-        $pausedAt = isset($pauseData[0]['paused_at']) ? new DateTime($pauseData[0]['paused_at']) : null;
+        $isPaused = isset($pauseData[0]['is_pause']) && $pauseData[0]['is_pause'] == 1;
+        $pausedAt = isset($pauseData[0]['triggered_at']) ? new DateTime($pauseData[0]['triggered_at']) : null;
     
-        $yesterday = (new DateTime())->modify('-1 day');
+        $today = new DateTime();
+        $yesterday = (clone $lastLoggedDate)->modify('+1 day');
+
         $missedDays = $lastLoggedDate->diff($yesterday)->days;
-    
+
         if ($isPaused) {
-            if ($pausedAt && $pausedAt <= $yesterday) {
-                // Missed a day or more before pausing
-                return 1;
-            } else {
-                // Paused before missing a day
-                return $currentCount + 1;
+            echo "1<br>";
+            if ($pausedAt) {
+                echo "2<br>";
+                if ($pausedAt->format('Y-m-d') === $lastLoggedDate->format('Y-m-d')) {
+                    echo "3<br>";
+                    return $currentCount + 1;
+                } elseif ($pausedAt <= $yesterday) {
+                    echo $pausedAt->format('Y-m-d') . '<= ' . $yesterday->format('Y-m-d');
+                    echo "<br>4<br>";
+                    return 1;
+                } else {
+                    echo "5<br>";
+                    return $currentCount + 1;
+                }
             }
         }
-    
-        // Not paused: check if streak is broken
-        return ($missedDays <= 1) ? $currentCount + 1 : 1;
+        echo $missedDays;exit;
+        return ($missedDays < 1) ? $currentCount + 1 : 1;
     }
     
     function streakLastLoggedAt($baseUrl, $headers, $params) {
