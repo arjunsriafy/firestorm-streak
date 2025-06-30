@@ -403,10 +403,89 @@
             echo json_encode(array("streaks" => $allStreaks, "milestones" => $milestones));
         break;
         case "app-clear-all-data":
-            // clear all streak data of user
-                $baseUrlStreakLogs = "https://$projectId.supabase.co/rest/v1/streakLog";
-                $deleteAllStreakLogsAppUser = deleteAllStreakLogsAppUser($baseUrlStreakLogs, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId']));
-                echo json_encode(array("status" => "success", "message" => "Streak deleted succesfully", "response" => $deleteAllStreakLogsAppUser));
+            // Clear all streak data of user
+            $baseUrlStreakLogs = "https://$projectId.supabase.co/rest/v1/streakLog";
+            $deleteAllStreakLogsAppUser = deleteAllStreakLogsAppUser($baseUrlStreakLogs, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId']));
+            echo json_encode(array("status" => "success", "message" => "Streak deleted succesfully", "response" => $deleteAllStreakLogsAppUser));
+        break;
+        case "app-mark-mock-streak":
+            // Mark mock streak
+            $baseUrl = "https://$projectId.supabase.co/rest/v1/streakLog";
+            $streakSku = '';
+            if(isset($_GET['streakSku'])){
+                $streakSku = $_GET['streakSku'];
+            }
+            else{
+                $baseUrlMilestones = "https://$projectId.supabase.co/rest/v1/milestones";
+                $milestonesOfApps = getStreakSkuOfAMilestone($baseUrlMilestones, $headers, array("appname" => $_GET['appname']));
+                $streakSku = $milestonesOfApps[0]["streakSku"];
+            }
+            $payloadToInsert = array('appname' => $_GET['appname'], 'userId' => $_GET['userId'], 'streakSku' => $streakSku);
+            $lang = $_GET['lang'];
+            $mock_date = $_GET['date'];
+            $baseUrlStreaks =  "https://$projectId.supabase.co/rest/v1/streaks";
+            $getStreakData = getStreakData($baseUrlStreaks, $headers, array('sku' => $streakSku));
+            if ($getStreakData) {
+                if(isset($getStreakData[0]['streakType']) && $getStreakData[0]['streakType'] == 'daily'){
+                    $existsTodayStreak = getStreakLogDataMock($baseUrl, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId'], 'streakSku' => $streakSku), $mock_date);
+                    if ($existsTodayStreak) {
+                        http_response_code(403);
+                        echo json_encode(array("status" => "error", "message" => "This streak is already marked today"));
+                        exit;
+                    }
+                }
+            }
+            else{
+                http_response_code(403);
+                echo json_encode(array("status" => "error", "message" => "This streak not exist for this app"));
+                exit;
+            }
+            $checkYesterdayStreakLogged = checkYesterdayStreakLogged($baseUrl, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId'], 'streakSku' => $streakSku));
+            if ($checkYesterdayStreakLogged) {
+                $count = (int)$checkYesterdayStreakLogged[0]['count'] + 1;
+            }
+            else{
+                // Condition for pause
+                // $baseUrlPaused = "https://$projectId.supabase.co/rest/v1/streakPause";
+                // $count = getUpdatedStreakCount($baseUrl, $baseUrlPaused, $headers, array(
+                //     'appname' => $_GET['appname'],
+                //     'userId' => $_GET['userId'],
+                //     'streakSku' => $_GET['streakSku']
+                // ));
+                // echo $count;exit;
+
+                $count = 1;
+            }
+            // echo $count;exit;
+            $payloadToInsert['count'] = $count;
+            $payloadToInsert['created_at'] = $mock_date;
+            // echo json_encode($payloadToInsert);exit;
+            $new = logStreak($baseUrl, $headers, $payloadToInsert);
+            $baseUrlMilestones = "https://$projectId.supabase.co/rest/v1/milestones";
+            $checkAnyMilestoneExist = checkAnyMilestoneExist($baseUrlMilestones, $headers, array('streakSku' => $streakSku, 'streakCount' => $count));
+            if ($checkAnyMilestoneExist) {
+                $baseUrlUserMilestones = "https://$projectId.supabase.co/rest/v1/userMilestones";
+                $insertUserMileStonePayload = array(
+                    "appname" => $_GET['appname'],
+                    "userId" => $_GET['userId'],
+                    "milestoneSku" => $checkAnyMilestoneExist[0]['sku'],
+                    "milestoneId" => $checkAnyMilestoneExist[0]['id'],
+                );
+                $checkAnyMilestoneExistLocalisations = json_decode($checkAnyMilestoneExist[0]['localizations'], true);
+                if($lang == 'en'){
+                    $checkAnyMilestoneExist[0]["nameLocalised"] = $checkAnyMilestoneExist[0]['name'];
+                    $checkAnyMilestoneExist[0]["descriptionLocalised"] = $checkAnyMilestoneExist[0]['description'];
+                }
+                else{
+                    $checkAnyMilestoneExist[0]["nameLocalised"] = $checkAnyMilestoneExistLocalisations[$lang]['name'];
+                    $checkAnyMilestoneExist[0]["descriptionLocalised"] = $checkAnyMilestoneExistLocalisations[$lang]['description'];
+                }
+                $newMilestone = addNewUserMilestones($baseUrlUserMilestones, $headers, $insertUserMileStonePayload);
+                echo json_encode(array("status" => "success", "message" => "Streak logged succesfully", "milestone" => $checkAnyMilestoneExist[0]));
+            }
+            else{
+                echo json_encode(array("status" => "success", "message" => "Streak logged succesfully"));
+            }
         break;
         default:
             http_response_code(401);
@@ -1084,5 +1163,30 @@
         $res = curl_exec($ch);
         curl_close($ch);
         return $res;
+    }
+
+    // Get next streak count mock
+    function getStreakLogDataMock($url, $headers, $filters, $mock_date) {
+        $date = date('Y-m-d', strtotime($mock_date));
+        foreach ($filters as $key => $value) {
+            if (is_array($value)) {
+                foreach ($value as $operator => $v) {
+                    $queryParts[] = "$key=" . $operator . "." . urlencode($v);
+                }
+            } else {
+                $queryParts[] = "$key=eq." . urlencode($value);
+            }
+        }
+        $queryUrl = "$url?" . implode('&', $queryParts) . "&created_at=gte.${date}T00:00:00&created_at=lt.${date}T23:59:59";
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $queryUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        $response = curl_exec($ch);
+        curl_close($ch);
+    
+        $data = json_decode($response, true);
+        return !empty($data) ? $data : false;
     }
 ?>
