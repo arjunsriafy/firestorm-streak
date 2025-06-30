@@ -200,7 +200,7 @@
                 $count = (int)$checkYesterdayStreakLogged[0]['count'] + 1;
             }
             else{
-                // Condition for pause
+                // // Condition for pause
                 // $baseUrlPaused = "https://$projectId.supabase.co/rest/v1/streakPause";
                 // $count = getUpdatedStreakCount($baseUrl, $baseUrlPaused, $headers, array(
                 //     'appname' => $_GET['appname'],
@@ -463,7 +463,7 @@
                 // $count = getUpdatedStreakCount($baseUrl, $baseUrlPaused, $headers, array(
                 //     'appname' => $_GET['appname'],
                 //     'userId' => $_GET['userId'],
-                //     'streakSku' => $_GET['streakSku']
+                //     'streakSku' => $streakSku
                 // ));
                 // echo $count;exit;
 
@@ -485,13 +485,13 @@
                     "milestoneId" => $checkAnyMilestoneExist[0]['id'],
                 );
                 $checkAnyMilestoneExistLocalisations = json_decode($checkAnyMilestoneExist[0]['localizations'], true);
-                if($lang == 'en'){
-                    $checkAnyMilestoneExist[0]["nameLocalised"] = $checkAnyMilestoneExist[0]['name'];
-                    $checkAnyMilestoneExist[0]["descriptionLocalised"] = $checkAnyMilestoneExist[0]['description'];
+                if(isset($checkAnyMilestoneExistLocalisations[$lang])){
+                    $checkAnyMilestoneExist[0]["name"] = $checkAnyMilestoneExistLocalisations[$lang]['name'];
+                    $checkAnyMilestoneExist[0]["description"] = $checkAnyMilestoneExistLocalisations[$lang]['description'];
                 }
                 else{
-                    $checkAnyMilestoneExist[0]["nameLocalised"] = $checkAnyMilestoneExistLocalisations[$lang]['name'];
-                    $checkAnyMilestoneExist[0]["descriptionLocalised"] = $checkAnyMilestoneExistLocalisations[$lang]['description'];
+                    $checkAnyMilestoneExist[0]["name"] = $checkAnyMilestoneExist[0]['name'];
+                    $checkAnyMilestoneExist[0]["description"] = $checkAnyMilestoneExist[0]['description'];
                 }
                 $newMilestone = addNewUserMilestones($baseUrlUserMilestones, $headers, $insertUserMileStonePayload);
                 echo json_encode(array("status" => "success", "message" => "Streak logged succesfully", "milestone" => $checkAnyMilestoneExist[0]));
@@ -1119,6 +1119,7 @@
                 }
             }
         }
+        return $missedDays;
         echo $missedDays;exit;
         return ($missedDays < 1) ? $currentCount + 1 : 1;
     }
