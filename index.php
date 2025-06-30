@@ -567,6 +567,7 @@
             }
         }
         $queryUrl = "$url?" . implode('&', $queryParts);
+        $queryUrl = str_replace(" ", "%20", $queryUrl);
     
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $queryUrl);
@@ -641,6 +642,7 @@
             }
         }
         $queryUrl = "$url?" . implode('&', $queryParts);
+        $queryUrl = str_replace(" ", "%20", $queryUrl);
     
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $queryUrl);
@@ -707,6 +709,7 @@
             }
         }
         $queryUrl = "$url?" . implode('&', $queryParts) . '&order=id.desc&limit=1';
+        $queryUrl = str_replace(" ", "%20", $queryUrl);
 
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $queryUrl);
@@ -731,6 +734,7 @@
             }
         }
         $queryUrl = "$url?" . implode('&', $queryParts);
+        $queryUrl = str_replace(" ", "%20", $queryUrl);
 
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $queryUrl);
@@ -756,6 +760,7 @@
             }
         }
         $queryUrl = "$url?" . implode('&', $queryParts) . "&created_at=gte.${date}T00:00:00&created_at=lt.${date}T23:59:59";
+        $queryUrl = str_replace(" ", "%20", $queryUrl);
 
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $queryUrl);
@@ -781,6 +786,7 @@
             }
         }
         $queryUrl = "$url?" . implode('&', $queryParts) . "&created_at=gte.${date}T00:00:00&created_at=lt.${date}T23:59:59";
+        $queryUrl = str_replace(" ", "%20", $queryUrl);
 
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $queryUrl);
@@ -805,6 +811,7 @@
             }
         }
         $queryUrl = "$url?" . implode('&', $queryParts);
+        $queryUrl = str_replace(" ", "%20", $queryUrl);
 
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $queryUrl);
@@ -855,6 +862,7 @@
             }
         }
         $queryUrl = "$url?" . implode('&', $queryParts);
+        $queryUrl = str_replace(" ", "%20", $queryUrl);
 
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $queryUrl);
@@ -867,7 +875,8 @@
 
     // All milestones for an app
     function getAllMilestonesApp($url, $headers, $appname) {
-        $queryUrl = str_replace(" ", "%20", "$url?appname=eq.$appname");
+        $queryUrl = "$url?appname=eq.$appname";
+        $queryUrl = str_replace(" ", "%20", $queryUrl);
 
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $queryUrl);
@@ -890,6 +899,7 @@
             }
         }
         $queryUrl = "$url?" . implode('&', $queryParts);
+        $queryUrl = str_replace(" ", "%20", $queryUrl);
 
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $queryUrl);
@@ -912,7 +922,7 @@
             }
         }
         $queryUrl = "$url?" . implode('&', $queryParts);
-        // echo $queryUrl;exit;
+        $queryUrl = str_replace(" ", "%20", $queryUrl);
 
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $queryUrl);
@@ -935,6 +945,7 @@
             }
         }
         $queryUrl = "$url?" . implode('&', $queryParts);
+        $queryUrl = str_replace(" ", "%20", $queryUrl);
 
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $queryUrl);
@@ -1145,6 +1156,7 @@
             }
         }
         $queryUrl = "$url?" . implode('&', $queryParts);
+        $queryUrl = str_replace(" ", "%20", $queryUrl);
 
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $queryUrl);
@@ -1169,6 +1181,7 @@
             }
         }
         $queryUrl = "$url?" . implode('&', $queryParts);
+        $queryUrl = str_replace(" ", "%20", $queryUrl);
 
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $queryUrl);
@@ -1193,6 +1206,7 @@
             }
         }
         $queryUrl = "$url?" . implode('&', $queryParts) . "&created_at=gte.${date}T00:00:00&created_at=lt.${date}T23:59:59";
+        $queryUrl = str_replace(" ", "%20", $queryUrl);
 
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $queryUrl);
@@ -1218,7 +1232,7 @@
             }
         }
         $queryUrl = "$url?" . implode('&', $queryParts) . "&created_at=gte.${date}T00:00:00&created_at=lt.${date}T23:59:59";
-        // echo $queryUrl;exit;
+        $queryUrl = str_replace(" ", "%20", $queryUrl);
 
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $queryUrl);
@@ -1243,6 +1257,7 @@
             }
         }
         $queryUrl = "$url?" . implode('&', $queryParts);
+        $queryUrl = str_replace(" ", "%20", $queryUrl);
 
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $queryUrl);
