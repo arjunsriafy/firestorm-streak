@@ -475,26 +475,32 @@
             // echo json_encode($payloadToInsert);exit;
             $new = logStreak($baseUrl, $headers, $payloadToInsert);
             $baseUrlMilestones = "https://$projectId.supabase.co/rest/v1/milestones";
-            $checkAnyMilestoneExist = checkAnyMilestoneExist($baseUrlMilestones, $headers, array('streakSku' => $streakSku, 'streakCount' => $count));
+            $checkAnyMilestoneExist = checkAnyMilestoneExist($baseUrlMilestones, $headers, array('streakSku' => $streakSku, 'streakCount' => $count, 'appname' => $_GET['appname']));
             if ($checkAnyMilestoneExist) {
                 $baseUrlUserMilestones = "https://$projectId.supabase.co/rest/v1/userMilestones";
-                $insertUserMileStonePayload = array(
-                    "appname" => $_GET['appname'],
-                    "userId" => $_GET['userId'],
-                    "milestoneSku" => $checkAnyMilestoneExist[0]['sku'],
-                    "milestoneId" => $checkAnyMilestoneExist[0]['id'],
-                );
-                $checkAnyMilestoneExistLocalisations = json_decode($checkAnyMilestoneExist[0]['localizations'], true);
-                if(isset($checkAnyMilestoneExistLocalisations[$lang])){
-                    $checkAnyMilestoneExist[0]["name"] = $checkAnyMilestoneExistLocalisations[$lang]['name'];
-                    $checkAnyMilestoneExist[0]["description"] = $checkAnyMilestoneExistLocalisations[$lang]['description'];
+                $checkAnyMilestoneExistIsAchieved = checkAnyMilestoneExistIsAchieved($baseUrlUserMilestones, $headers, array('milestoneSku' => $checkAnyMilestoneExist[0]['sku'], 'appname' => $_GET['appname'], "userId" => $_GET['userId']));
+                if($checkAnyMilestoneExistIsAchieved == false){
+                    $insertUserMileStonePayload = array(
+                        "appname" => $_GET['appname'],
+                        "userId" => $_GET['userId'],
+                        "milestoneSku" => $checkAnyMilestoneExist[0]['sku'],
+                        "milestoneId" => $checkAnyMilestoneExist[0]['id'],
+                    );
+                    $checkAnyMilestoneExistLocalisations = json_decode($checkAnyMilestoneExist[0]['localizations'], true);
+                    if(isset($checkAnyMilestoneExistLocalisations[$lang])){
+                        $checkAnyMilestoneExist[0]["name"] = $checkAnyMilestoneExistLocalisations[$lang]['name'];
+                        $checkAnyMilestoneExist[0]["description"] = $checkAnyMilestoneExistLocalisations[$lang]['description'];
+                    }
+                    else{
+                        $checkAnyMilestoneExist[0]["name"] = $checkAnyMilestoneExist[0]['name'];
+                        $checkAnyMilestoneExist[0]["description"] = $checkAnyMilestoneExist[0]['description'];
+                    }
+                    $newMilestone = addNewUserMilestones($baseUrlUserMilestones, $headers, $insertUserMileStonePayload);
+                    echo json_encode(array("status" => "success", "message" => "Streak logged succesfully", "milestone" => $checkAnyMilestoneExist[0]));
                 }
                 else{
-                    $checkAnyMilestoneExist[0]["name"] = $checkAnyMilestoneExist[0]['name'];
-                    $checkAnyMilestoneExist[0]["description"] = $checkAnyMilestoneExist[0]['description'];
+                    echo json_encode(array("status" => "success", "message" => "Streak logged succesfully"));
                 }
-                $newMilestone = addNewUserMilestones($baseUrlUserMilestones, $headers, $insertUserMileStonePayload);
-                echo json_encode(array("status" => "success", "message" => "Streak logged succesfully", "milestone" => $checkAnyMilestoneExist[0]));
             }
             else{
                 echo json_encode(array("status" => "success", "message" => "Streak logged succesfully"));
@@ -800,6 +806,31 @@
 
     // Get next streak count
     function checkAnyMilestoneExist($url, $headers, $filters) {
+        foreach ($filters as $key => $value) {
+            if (is_array($value)) {
+                foreach ($value as $operator => $v) {
+                    $queryParts[] = "$key=" . $operator . "." . urlencode($v);
+                }
+            } else {
+                $queryParts[] = "$key=eq." . urlencode($value);
+            }
+        }
+        $queryUrl = "$url?" . implode('&', $queryParts);
+        $queryUrl = str_replace(" ", "%20", $queryUrl);
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $queryUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        $response = curl_exec($ch);
+        curl_close($ch);
+    
+        $data = json_decode($response, true);
+        return !empty($data) ? $data : false;
+    }
+
+    // Get next streak count
+    function checkAnyMilestoneExistIsAchieved($url, $headers, $filters) {
         foreach ($filters as $key => $value) {
             if (is_array($value)) {
                 foreach ($value as $operator => $v) {
