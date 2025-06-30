@@ -271,7 +271,6 @@
             // Read all milestones of app
             $baseUrlMilestones = "https://$projectId.supabase.co/rest/v1/milestones";
             $allMilestonesApp = getAllMilestonesApp($baseUrlMilestones, $headers, $_GET['appname']);
-            echo json_encode($allMilestonesApp);exit;
             
             if(isset($_GET['lang']) && $_GET['lang'] != "en"){
                 $i = 0;
