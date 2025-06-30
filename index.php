@@ -200,12 +200,12 @@
                 $count = (int)$checkYesterdayStreakLogged[0]['count'] + 1;
             }
             else{
-                // // Condition for pause
+                // Condition for pause
                 // $baseUrlPaused = "https://$projectId.supabase.co/rest/v1/streakPause";
                 // $count = getUpdatedStreakCount($baseUrl, $baseUrlPaused, $headers, array(
                 //     'appname' => $_GET['appname'],
                 //     'userId' => $_GET['userId'],
-                //     'streakSku' => $_GET['streakSku']
+                //     'streakSku' => $streakSku
                 // ));
                 // echo $count;exit;
 
@@ -215,26 +215,32 @@
             $payloadToInsert['count'] = $count;
             $new = logStreak($baseUrl, $headers, $payloadToInsert);
             $baseUrlMilestones = "https://$projectId.supabase.co/rest/v1/milestones";
-            $checkAnyMilestoneExist = checkAnyMilestoneExist($baseUrlMilestones, $headers, array('streakSku' => $streakSku, 'streakCount' => $count));
+            $checkAnyMilestoneExist = checkAnyMilestoneExist($baseUrlMilestones, $headers, array('streakSku' => $streakSku, 'streakCount' => $count, 'appname' => $_GET['appname']));
             if ($checkAnyMilestoneExist) {
                 $baseUrlUserMilestones = "https://$projectId.supabase.co/rest/v1/userMilestones";
-                $insertUserMileStonePayload = array(
-                    "appname" => $_GET['appname'],
-                    "userId" => $_GET['userId'],
-                    "milestoneSku" => $checkAnyMilestoneExist[0]['sku'],
-                    "milestoneId" => $checkAnyMilestoneExist[0]['id'],
-                );
-                $checkAnyMilestoneExistLocalisations = json_decode($checkAnyMilestoneExist[0]['localizations'], true);
-                if($lang == 'en'){
-                    $checkAnyMilestoneExist[0]["nameLocalised"] = $checkAnyMilestoneExist[0]['name'];
-                    $checkAnyMilestoneExist[0]["descriptionLocalised"] = $checkAnyMilestoneExist[0]['description'];
+                $checkAnyMilestoneExistIsAchieved = checkAnyMilestoneExistIsAchieved($baseUrlUserMilestones, $headers, array('milestoneSku' => $checkAnyMilestoneExist[0]['sku'], 'appname' => $_GET['appname'], "userId" => $_GET['userId']));
+                if($checkAnyMilestoneExistIsAchieved == false){
+                    $insertUserMileStonePayload = array(
+                        "appname" => $_GET['appname'],
+                        "userId" => $_GET['userId'],
+                        "milestoneSku" => $checkAnyMilestoneExist[0]['sku'],
+                        "milestoneId" => $checkAnyMilestoneExist[0]['id'],
+                    );
+                    $checkAnyMilestoneExistLocalisations = json_decode($checkAnyMilestoneExist[0]['localizations'], true);
+                    if(isset($checkAnyMilestoneExistLocalisations[$lang])){
+                        $checkAnyMilestoneExist[0]["name"] = $checkAnyMilestoneExistLocalisations[$lang]['name'];
+                        $checkAnyMilestoneExist[0]["description"] = $checkAnyMilestoneExistLocalisations[$lang]['description'];
+                    }
+                    else{
+                        $checkAnyMilestoneExist[0]["name"] = $checkAnyMilestoneExist[0]['name'];
+                        $checkAnyMilestoneExist[0]["description"] = $checkAnyMilestoneExist[0]['description'];
+                    }
+                    $newMilestone = addNewUserMilestones($baseUrlUserMilestones, $headers, $insertUserMileStonePayload);
+                    echo json_encode(array("status" => "success", "message" => "Streak logged succesfully", "milestone" => $checkAnyMilestoneExist[0]));
                 }
                 else{
-                    $checkAnyMilestoneExist[0]["nameLocalised"] = $checkAnyMilestoneExistLocalisations[$lang]['name'];
-                    $checkAnyMilestoneExist[0]["descriptionLocalised"] = $checkAnyMilestoneExistLocalisations[$lang]['description'];
+                    echo json_encode(array("status" => "success", "message" => "Streak logged succesfully"));
                 }
-                $newMilestone = addNewUserMilestones($baseUrlUserMilestones, $headers, $insertUserMileStonePayload);
-                echo json_encode(array("status" => "success", "message" => "Streak logged succesfully", "milestone" => $checkAnyMilestoneExist[0]));
             }
             else{
                 echo json_encode(array("status" => "success", "message" => "Streak logged succesfully"));
