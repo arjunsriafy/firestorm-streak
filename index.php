@@ -327,6 +327,17 @@
                     $allStreaksApp[0]["streak_marked"] = $streak_marked;
                 }
 
+                if(isset($_GET['lang']) && $_GET['lang'] != "en"){
+                    $j = 0;
+                    if (!empty($allStreaksApp[0]['localizations'])) {
+                        $localizations = json_decode($allStreaksApp[0]['localizations'], true);
+                        if (isset($localizations[$_GET['lang']])) {
+                            $allStreaksApp[0]['name'] = $localizations[$_GET['lang']]['name'];
+                            $allStreaksApp[0]['description'] = $localizations[$_GET['lang']]['description'];
+                        }
+                    }
+                }
+
                 // $allStreaksApp[0]["restore_streak_saved"] = 0;
 
                 $allStreaks = array_map(function($streak) {
