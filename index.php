@@ -453,7 +453,7 @@
                 echo json_encode(array("status" => "error", "message" => "This streak not exist for this app"));
                 exit;
             }
-            $checkYesterdayStreakLogged = checkYesterdayStreakLogged($baseUrl, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId'], 'streakSku' => $streakSku));
+            $checkYesterdayStreakLogged = checkYesterdayStreakLoggedMock($baseUrl, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId'], 'streakSku' => $streakSku), $mock_date);
             if ($checkYesterdayStreakLogged) {
                 $count = (int)$checkYesterdayStreakLogged[0]['count'] + 1;
             }
@@ -1156,6 +1156,7 @@
         return !empty($data) ? $data : false;
     }
 
+    // Delete all user streaks
     function deleteAllStreakLogsAppUser($url, $headers, $filters){
         foreach ($filters as $key => $value) {
             if (is_array($value)) {
@@ -1203,6 +1204,33 @@
         return !empty($data) ? $data : false;
     }
 
+    // Get next streak count
+    function checkYesterdayStreakLoggedMock($url, $headers, $filters, $mock_date) {
+        $date = date('Y-m-d', strtotime($mock_date . ' -1 day'));
+        foreach ($filters as $key => $value) {
+            if (is_array($value)) {
+                foreach ($value as $operator => $v) {
+                    $queryParts[] = "$key=" . $operator . "." . urlencode($v);
+                }
+            } else {
+                $queryParts[] = "$key=eq." . urlencode($value);
+            }
+        }
+        $queryUrl = "$url?" . implode('&', $queryParts) . "&created_at=gte.${date}T00:00:00&created_at=lt.${date}T23:59:59";
+        // echo $queryUrl;exit;
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $queryUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        $response = curl_exec($ch);
+        curl_close($ch);
+    
+        $data = json_decode($response, true);
+        return !empty($data) ? $data : false;
+    }
+
+    // Delete all user milestones
     function deleteAllMilestonesAppUser($url, $headers, $filters){
         foreach ($filters as $key => $value) {
             if (is_array($value)) {
