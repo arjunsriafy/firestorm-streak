@@ -417,7 +417,9 @@
             // Clear all streak data of user
             $baseUrlStreakLogs = "https://$projectId.supabase.co/rest/v1/streakLog";
             $deleteAllStreakLogsAppUser = deleteAllStreakLogsAppUser($baseUrlStreakLogs, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId']));
-            echo json_encode(array("status" => "success", "message" => "Streak deleted succesfully", "response" => $deleteAllStreakLogsAppUser));
+            $baseUrlUserMilestones = "https://$projectId.supabase.co/rest/v1/userMilestones";
+            $deleteAllMilestonesAppUser = deleteAllMilestonesAppUser($baseUrlUserMilestones, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId']));
+            echo json_encode(array("status" => "success", "message" => "Streak log and achieved milestones deleted succesfully", "response" => $deleteAllStreakLogsAppUser));
         break;
         case "app-mark-mock-streak":
             // Mark mock streak
@@ -1199,5 +1201,27 @@
     
         $data = json_decode($response, true);
         return !empty($data) ? $data : false;
+    }
+
+    function deleteAllMilestonesAppUser($url, $headers, $filters){
+        foreach ($filters as $key => $value) {
+            if (is_array($value)) {
+                foreach ($value as $operator => $v) {
+                    $queryParts[] = "$key=" . $operator . "." . urlencode($v);
+                }
+            } else {
+                $queryParts[] = "$key=eq." . urlencode($value);
+            }
+        }
+        $queryUrl = "$url?" . implode('&', $queryParts);
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $queryUrl);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "DELETE");
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        $res = curl_exec($ch);
+        curl_close($ch);
+        return $res;
     }
 ?>
