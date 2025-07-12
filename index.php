@@ -1830,7 +1830,7 @@
             return [];
         }
         
-        // Extract unique user IDs and appnames from the milestones
+        // Extdract unique user IDs and appnames from the milestones
         $users = [];
         $seenUsers = [];
         
