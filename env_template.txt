@@ -1,0 +1,20 @@
+# Firebase App Mapping - Maps project IDs to their service account files
+FIREBASE_APP_MAP='{
+  "super-shell-6-firebase-adminsdk-6yvwz-04da96b590_d4LrOyk": "service-accounts/super-shell-6-firebase-adminsdk-6yvwz-04da96b590_d4LrOyk.json",
+  "test-7e604-firebase-adminsdk-ewkbe-9462a4883c_HQKBQ6J": "service-accounts/test-7e604-firebase-adminsdk-ewkbe-9462a4883c_HQKBQ6J.json",
+  "walking-tracker-pedometer-firebase-adminsdk-ggkr6-6cdbc64f58_V0GGKhZ": "service-accounts/walking-tracker-pedometer-firebase-adminsdk-ggkr6-6cdbc64f58_V0GGKhZ.json",
+  "workout-ed0ae-firebase-adminsdk-ut76u-fd94a13f10_hmAOSvM": "service-accounts/workout-ed0ae-firebase-adminsdk-ut76u-fd94a13f10_hmAOSvM.json",
+  "super-shell-5-firebase-adminsdk-llnye-e75819993e_aIaTsVj": "service-accounts/super-shell-5-firebase-adminsdk-llnye-e75819993e_aIaTsVj.json",
+  "simi-shell-firebase-adminsdk-7oobc-215579245e_oPiVw3V": "service-accounts/simi-shell-firebase-adminsdk-7oobc-215579245e_oPiVw3V.json",
+  "super-shell-2-firebase-adminsdk-tl52j-86c8225e0f_VPefZwF": "service-accounts/super-shell-2-firebase-adminsdk-tl52j-86c8225e0f_VPefZwF.json",
+  "super-shell-3-firebase-adminsdk-g691q-4409d411cc_4iPFJ0C": "service-accounts/super-shell-3-firebase-adminsdk-g691q-4409d411cc_4iPFJ0C.json",
+  "super-shell-4-firebase-adminsdk-zu530-3bc1908823_w81Q4tX": "service-accounts/super-shell-4-firebase-adminsdk-zu530-3bc1908823_w81Q4tX.json",
+  "read-book-series-firebase-adminsdk-nym1x-3d8079bb72_JfRqbzP": "service-accounts/read-book-series-firebase-adminsdk-nym1x-3d8079bb72_JfRqbzP.json",
+  "riafy-apps-firebase-adminsdk-yl4wx-c696f42101_LUvUfqx": "service-accounts/riafy-apps-firebase-adminsdk-yl4wx-c696f42101_LUvUfqx.json",
+  "health-tracker-series-firebase-adminsdk-drw2m-2b863b4260_zXq480W": "service-accounts/health-tracker-series-firebase-adminsdk-drw2m-2b863b4260_zXq480W.json",
+  "cookbook-now-145-firebase-adminsdk-6hpb8-7b02f60c98_0rl14nT": "service-accounts/cookbook-now-145-firebase-adminsdk-6hpb8-7b02f60c98_0rl14nT.json",
+  "daily-quotes-1a4a9-firebase-adminsdk-7ty0l-fc3888c361_r2uOLfN": "service-accounts/daily-quotes-1a4a9-firebase-adminsdk-7ty0l-fc3888c361_r2uOLfN.json",
+  "fir-d9861-firebase-adminsdk-nkaxk-8d888b6d50_ztiKEFY": "service-accounts/fir-d9861-firebase-adminsdk-nkaxk-8d888b6d50_ztiKEFY.json",
+  "content-apps-firebase-adminsdk-x2f49-e284d4f61e_9zkYCj9": "service-accounts/content-apps-firebase-adminsdk-x2f49-e284d4f61e_9zkYCj9.json",
+  "content-apps-2-firebase-adminsdk-m3fox-fd4c5cb469_bAdPKe0": "service-accounts/content-apps-2-firebase-adminsdk-m3fox-fd4c5cb469_bAdPKe0.json"
+}'
