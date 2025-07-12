@@ -200,20 +200,30 @@
                 $count = (int)$checkYesterdayStreakLogged[0]['count'] + 1;
             }
             else{
-                // Condition for pause
-                // $baseUrlPaused = "https://$projectId.supabase.co/rest/v1/streakPause";
-                // $count = getUpdatedStreakCount($baseUrl, $baseUrlPaused, $headers, array(
-                //     'appname' => $_GET['appname'],
-                //     'userId' => $_GET['userId'],
-                //     'streakSku' => $streakSku
-                // ));
-                // echo $count;exit;
-
-                $count = 1;
+                // Check pause logic for streak continuation
+                $baseUrlPaused = "https://$projectId.supabase.co/rest/v1/streakPause";
+                $params = array(
+                    'appname' => $_GET['appname'],
+                    'userId' => $_GET['userId'],
+                    'streakSku' => $streakSku
+                );
+                $count = getStreakCountWithPauseLogic($baseUrl, $baseUrlPaused, $headers, $params);
             }
             // echo $count;exit;
             $payloadToInsert['count'] = $count;
             $new = logStreak($baseUrl, $headers, $payloadToInsert);
+
+            // Store user data (same as app-mark-mock-streak)
+            $userData = array(
+                "fcmToken" => $_GET['fcmToken'] ?? '',
+                "userId" => $_GET['userId'],
+                "name" => $_GET['name'] ?? '',
+                "appname" => $_GET['appname'],
+                "lang" => $lang
+            );
+            // store user data
+            $userTable = "https://$projectId.supabase.co/rest/v1/users";
+            $user = storeUserData($userTable, $headers, $userData);
             $baseUrlMilestones = "https://$projectId.supabase.co/rest/v1/milestones";
             $checkAnyMilestoneExist = checkAnyMilestoneExist($baseUrlMilestones, $headers, array('streakSku' => $streakSku, 'streakCount' => $count, 'appname' => $_GET['appname']));
             if ($checkAnyMilestoneExist) {
@@ -252,10 +262,33 @@
             $checkPauseExist = checkPauseExist($baseUrl, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId']));
             if ($checkPauseExist) {
                 $id = $checkPauseExist[0]['id'];
-                $new = updatePauseResumeStreak($baseUrl, $headers, $id, array("is_pause" => "1"));
+                if(isset($_GET['date'])){
+                    $triggered_at = $_GET['date'];
+                }
+                else{
+                    $triggered_at = date('c');
+                }
+                $new = updatePauseResumeStreak($baseUrl, $headers, $id, array("is_pause" => "1", "triggered_at" => $triggered_at));
                 echo json_encode(array("status" => "success", "message" => "Streak paused succcesfully", "response" => $new));
             }
             else{
+                // If not exist, create with is_pause = 1
+                if(isset($_GET['date'])){
+                    $payloadToInsert = array(
+                        "appname" => $_GET['appname'],
+                        "userId" => $_GET['userId'],
+                        "is_pause" => "1",
+                        "triggered_at" => $_GET['date']
+                    );
+                }
+                else{
+                    $payloadToInsert = array(
+                        "appname" => $_GET['appname'],
+                        "userId" => $_GET['userId'],
+                        "is_pause" => "1",
+                        "triggered_at" => date('c')
+                    );
+                }
                 $new = pauseResumeStreak($baseUrl, $headers, $payloadToInsert);
                 echo json_encode(array("status" => "success", "message" => "Streak paused succesfully", "response" => $new));
             }
@@ -266,7 +299,13 @@
             $checkPauseExist = checkPauseExist($baseUrl, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId']));
             if ($checkPauseExist) {
                 $id = $checkPauseExist[0]['id'];
-                $new = updatePauseResumeStreak($baseUrl, $headers, $id, array("is_pause" => "0"));
+                if(isset($_GET['date'])){
+                    $triggered_at = $_GET['date'];
+                }
+                else{
+                    $triggered_at = date('c');
+                }
+                $new = updatePauseResumeStreak($baseUrl, $headers, $id, array("is_pause" => "0", "triggered_at" => $triggered_at));
                 echo json_encode(array("status" => "success", "message" => "Streak resumed succesfully", "response" => $new));
             }
             else{
@@ -464,22 +503,42 @@
                 $count = (int)$checkYesterdayStreakLogged[0]['count'] + 1;
             }
             else{
-                // Condition for pause
-                // $baseUrlPaused = "https://$projectId.supabase.co/rest/v1/streakPause";
-                // $count = getUpdatedStreakCount($baseUrl, $baseUrlPaused, $headers, array(
-                //     'appname' => $_GET['appname'],
-                //     'userId' => $_GET['userId'],
-                //     'streakSku' => $streakSku
-                // ));
-                // echo $count;exit;
-
-                $count = 1;
+                // Check pause logic for streak continuation (for mock data, we need to get the last streak before the mock date)
+                $baseUrlPaused = "https://$projectId.supabase.co/rest/v1/streakPause";
+                $params = array(
+                    'appname' => $_GET['appname'],
+                    'userId' => $_GET['userId'],
+                    'streakSku' => $streakSku
+                );
+                
+                // Get the last streak log before the mock date
+                $lastStreakLog = getAllStreakLogsApp($baseUrl, $headers, array(
+                    'appname' => $_GET['appname'], 
+                    'userId' => $_GET['userId'], 
+                    'streakSku' => $streakSku,
+                    'order' => ['created_at' => 'desc'],
+                    'limit' => 1
+                ));
+                
+                $count = getStreakCountWithPauseLogic($baseUrl, $baseUrlPaused, $headers, $params, $lastStreakLog);
             }
             // echo $count;exit;
             $payloadToInsert['count'] = $count;
             $payloadToInsert['created_at'] = $mock_date;
             // echo json_encode($payloadToInsert);exit;
             $new = logStreak($baseUrl, $headers, $payloadToInsert);
+
+            $userData = array(
+                "fcmToken" => $_GET['fcmToken'],
+                "userId" => $_GET['userId'],
+                "name" => $_GET['name'],
+                "appname" => $_GET['appname'],
+                "lang" => $lang
+            );
+            // store user data
+            $userTable = "https://$projectId.supabase.co/rest/v1/users";
+            $user = storeUserData($userTable, $headers, $userData);
+
             $baseUrlMilestones = "https://$projectId.supabase.co/rest/v1/milestones";
             $checkAnyMilestoneExist = checkAnyMilestoneExist($baseUrlMilestones, $headers, array('streakSku' => $streakSku, 'streakCount' => $count, 'appname' => $_GET['appname']));
             if ($checkAnyMilestoneExist) {
@@ -1304,5 +1363,193 @@
         $res = curl_exec($ch);
         curl_close($ch);
         return $res;
+    }
+
+    // Store user data
+    function storeUserData($url, $headers, $data) {
+        // Add Prefer header for upsert
+        $headers[] = "Prefer: resolution=merge-duplicates,return=representation";
+        // Add on_conflict param for upsert
+        if (strpos($url, '?') === false) {
+            $url .= '?on_conflict=userId';
+        } else {
+            $url .= '&on_conflict=userId';
+        }
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+        $res = curl_exec($ch);
+        curl_close($ch);
+        return json_decode($res, true);
+    }
+
+    // Scenario 1: Check if pause was activated at the right time to continue streak (original logic)
+    function checkPauseActivationForStreak_Scenario1($baseUrlPaused, $headers, $params, $lastStreakDate = null) {
+        $appname = $params['appname'];
+        $userId = $params['userId'];
+        
+        // Get pause data
+        $pauseData = checkPauseExist($baseUrlPaused, $headers, array('appname' => $appname, 'userId' => $userId));
+        
+        if (!$pauseData || empty($pauseData)) {
+            return false; // No pause record found
+        }
+        
+        $pauseRecord = $pauseData[0];
+        $isPaused = ($pauseRecord['is_pause'] == "1" || $pauseRecord['is_pause'] == 1);
+        $pauseTriggeredAt = $pauseRecord['triggered_at'];
+        
+        if (!$isPaused) {
+            return false; // Not currently paused
+        }
+        
+        // If no last streak date provided, get it from the database
+        if (!$lastStreakDate) {
+            // Use the existing $baseUrl from the calling context
+            global $baseUrl;
+            $lastStreakLog = getAllStreakLogsApp($baseUrl, $headers, array(
+                'appname' => $appname, 
+                'userId' => $userId, 
+                'streakSku' => $params['streakSku'],
+                'order' => ['created_at' => 'desc'],
+                'limit' => 1
+            ));
+            
+            if (empty($lastStreakLog)) {
+                return false; // No previous streak found
+            }
+            
+            $lastStreakDate = $lastStreakLog[0]['created_at'];
+        }
+        
+        // Convert dates to DateTime objects
+        $lastStreakDateTime = new DateTime($lastStreakDate);
+        $pauseTriggeredDateTime = new DateTime($pauseTriggeredAt);
+        
+        // Calculate the expected next streak date (next day after last streak)
+        $expectedNextStreakDate = clone $lastStreakDateTime;
+        $expectedNextStreakDate->modify('+1 day');
+        
+        // Check if pause was activated on the same day as last streak or the very next day
+        $pauseTriggeredDate = $pauseTriggeredDateTime->format('Y-m-d');
+        $lastStreakDateOnly = $lastStreakDateTime->format('Y-m-d');
+        $expectedNextStreakDateOnly = $expectedNextStreakDate->format('Y-m-d');
+        
+        // Pause is valid if activated on the same day as last streak OR the very next day
+        $pauseIsValid = ($pauseTriggeredDate === $lastStreakDateOnly || $pauseTriggeredDate === $expectedNextStreakDateOnly);
+        
+        if ($pauseIsValid) {
+            // Resume the streak by setting is_pause to 0
+            $id = $pauseRecord['id'];
+            $triggered_at = isset($_GET['date']) ? $_GET['date'] : date('c');
+            updatePauseResumeStreak($baseUrlPaused, $headers, $id, array("is_pause" => "0", "triggered_at" => $triggered_at));
+        }
+        
+        return $pauseIsValid;
+    }
+
+    // Scenario 2: Check if pause was activated and last streak was logged after pause (new logic)
+    function checkPauseActivationForStreak_Scenario2($baseUrlPaused, $headers, $params, $lastStreakDate = null) {
+        $appname = $params['appname'];
+        $userId = $params['userId'];
+        
+        // Get pause data
+        $pauseData = checkPauseExist($baseUrlPaused, $headers, array('appname' => $appname, 'userId' => $userId));
+        
+        if (!$pauseData || empty($pauseData)) {
+            return false; // No pause record found
+        }
+        
+        $pauseRecord = $pauseData[0];
+        $isPaused = ($pauseRecord['is_pause'] == "1" || $pauseRecord['is_pause'] == 1);
+        $pauseTriggeredAt = $pauseRecord['triggered_at'];
+        
+        if (!$isPaused) {
+            return false; // Not currently paused
+        }
+        
+        // If no last streak date provided, get it from the database
+        if (!$lastStreakDate) {
+            // Use the existing $baseUrl from the calling context
+            global $baseUrl;
+            $lastStreakLog = getAllStreakLogsApp($baseUrl, $headers, array(
+                'appname' => $appname, 
+                'userId' => $userId, 
+                'streakSku' => $params['streakSku'],
+                'order' => ['created_at' => 'desc'],
+                'limit' => 1
+            ));
+            
+            if (empty($lastStreakLog)) {
+                return false; // No previous streak found
+            }
+            
+            $lastStreakDate = $lastStreakLog[0]['created_at'];
+        }
+        
+        // Convert dates to DateTime objects
+        $lastStreakDateTime = new DateTime($lastStreakDate);
+        $pauseTriggeredDateTime = new DateTime($pauseTriggeredAt);
+        
+        // Check if the last streak was logged after the pause was activated
+        if ($lastStreakDateTime > $pauseTriggeredDateTime) {
+            // Last streak was logged after pause was activated, so pause is still protecting the streak
+            return true;
+        }
+        
+        // Calculate the expected next streak date (next day after last streak)
+        $expectedNextStreakDate = clone $lastStreakDateTime;
+        $expectedNextStreakDate->modify('+1 day');
+        
+        // Check if pause was activated on the same day as last streak or the very next day
+        $pauseTriggeredDate = $pauseTriggeredDateTime->format('Y-m-d');
+        $lastStreakDateOnly = $lastStreakDateTime->format('Y-m-d');
+        $expectedNextStreakDateOnly = $expectedNextStreakDate->format('Y-m-d');
+        
+        // Pause is valid if activated on the same day as last streak OR the very next day
+        return ($pauseTriggeredDate === $lastStreakDateOnly || $pauseTriggeredDate === $expectedNextStreakDateOnly);
+    }
+
+    // Get the appropriate streak count considering pause logic
+    function getStreakCountWithPauseLogic($baseUrl, $baseUrlPaused, $headers, $params, $lastStreakLog = null) {
+        $appname = $params['appname'];
+        $userId = $params['userId'];
+        $streakSku = $params['streakSku'];
+        
+        // If no last streak log provided, get it
+        if (!$lastStreakLog) {
+            $lastStreakLog = getAllStreakLogsApp($baseUrl, $headers, array(
+                'appname' => $appname, 
+                'userId' => $userId, 
+                'streakSku' => $streakSku,
+                'order' => ['created_at' => 'desc'],
+                'limit' => 1
+            ));
+        }
+        
+        if (empty($lastStreakLog)) {
+            return 1; // First streak
+        }
+        
+        $lastStreakData = $lastStreakLog[0];
+        $lastStreakDate = $lastStreakData['created_at'];
+        $lastStreakCount = (int)$lastStreakData['count'];
+        
+        // Check if pause was activated properly - SCENARIO 1 (Original Logic)
+        $pauseActivatedProperly = checkPauseActivationForStreak_Scenario1($baseUrlPaused, $headers, $params, $lastStreakDate);
+        
+        // Check if pause was activated properly - SCENARIO 2 (New Logic) - COMMENTED OUT
+        // $pauseActivatedProperly = checkPauseActivationForStreak_Scenario2($baseUrlPaused, $headers, $params, $lastStreakDate);
+        
+        if ($pauseActivatedProperly) {
+            // Continue streak: last count + 1
+            return $lastStreakCount + 1;
+        } else {
+            // Reset streak: count = 1 (either no pause record or pause not activated properly)
+            return 1;
+        }
     }
 ?>
