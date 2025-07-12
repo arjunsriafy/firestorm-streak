@@ -1614,7 +1614,7 @@
     }
 
     function sendFCMMessage($users, $streakLogTableUrl, $baseUrlMilestones, $baseUrlUserMilestones, $today, $headers) {
-        // echo jsodn_encode($users);
+        // echo json_encode($users);
         // exit;
         foreach ($users as $user) {
             $milestonesOfApps = getStreakSkuOfAMilestone($baseUrlMilestones, $headers, array("appname" => $user['appname']));
