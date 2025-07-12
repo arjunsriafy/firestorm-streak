@@ -202,12 +202,13 @@
             else{
                 // Check pause logic for streak continuation
                 $baseUrlPaused = "https://$projectId.supabase.co/rest/v1/streakPause";
+                $pauseLogUrl = "https://$projectId.supabase.co/rest/v1/streakPauseLog";
                 $params = array(
                     'appname' => $_GET['appname'],
                     'userId' => $_GET['userId'],
                     'streakSku' => $streakSku
                 );
-                $count = getStreakCountWithPauseLogic($baseUrl, $baseUrlPaused, $headers, $params);
+                $count = getStreakCountWithPauseLogic($baseUrl, $baseUrlPaused, $pauseLogUrl, $headers, $params);
             }
             // echo $count;exit;
             $payloadToInsert['count'] = $count;
@@ -259,6 +260,7 @@
         case "app-pause-streak":
             // Pause streak
             $baseUrl = "https://$projectId.supabase.co/rest/v1/streakPause";
+            $pauseLogUrl = "https://$projectId.supabase.co/rest/v1/streakPauseLog";
             $checkPauseExist = checkPauseExist($baseUrl, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId']));
             if ($checkPauseExist) {
                 $id = $checkPauseExist[0]['id'];
@@ -269,6 +271,15 @@
                     $triggered_at = date('c');
                 }
                 $new = updatePauseResumeStreak($baseUrl, $headers, $id, array("is_pause" => "1", "triggered_at" => $triggered_at));
+                
+                // Create new pause log entry
+                $pauseLogData = array(
+                    "appname" => $_GET['appname'],
+                    "userId" => $_GET['userId'],
+                    "paused_at" => $triggered_at
+                );
+                $pauseLog = pauseResumeStreakLog($pauseLogUrl, $headers, $pauseLogData);
+                
                 echo json_encode(array("status" => "success", "message" => "Streak paused succcesfully", "response" => $new));
             }
             else{
@@ -280,6 +291,7 @@
                         "is_pause" => "1",
                         "triggered_at" => $_GET['date']
                     );
+                    $triggered_at = $_GET['date'];
                 }
                 else{
                     $payloadToInsert = array(
@@ -288,14 +300,25 @@
                         "is_pause" => "1",
                         "triggered_at" => date('c')
                     );
+                    $triggered_at = date('c');
                 }
                 $new = pauseResumeStreak($baseUrl, $headers, $payloadToInsert);
+                
+                // Create new pause log entry
+                $pauseLogData = array(
+                    "appname" => $_GET['appname'],
+                    "userId" => $_GET['userId'],
+                    "paused_at" => $triggered_at
+                );
+                $pauseLog = pauseResumeStreakLog($pauseLogUrl, $headers, $pauseLogData);
+                
                 echo json_encode(array("status" => "success", "message" => "Streak paused succesfully", "response" => $new));
             }
         break;
         case "app-resume-streak":
             // Resume streak
             $baseUrl = "https://$projectId.supabase.co/rest/v1/streakPause";
+            $pauseLogUrl = "https://$projectId.supabase.co/rest/v1/streakPauseLog";
             $checkPauseExist = checkPauseExist($baseUrl, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId']));
             if ($checkPauseExist) {
                 $id = $checkPauseExist[0]['id'];
@@ -306,6 +329,17 @@
                     $triggered_at = date('c');
                 }
                 $new = updatePauseResumeStreak($baseUrl, $headers, $id, array("is_pause" => "0", "triggered_at" => $triggered_at));
+                
+                // Find the latest pause log entry (without resumed_at) and update it
+                $latestPauseLog = getLatestPauseLogWithoutResume($pauseLogUrl, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId']));
+                if ($latestPauseLog) {
+                    $pauseLogId = $latestPauseLog[0]['id'];
+                    $updatePauseLogData = array(
+                        "resumed_at" => $triggered_at
+                    );
+                    $pauseLog = updatePauseLog($pauseLogUrl, $headers, $pauseLogId, $updatePauseLogData);
+                }
+                
                 echo json_encode(array("status" => "success", "message" => "Streak resumed succesfully", "response" => $new));
             }
             else{
@@ -392,8 +426,49 @@
 
                 $streaks = $allStreaks[0];
             }
+
+            $userData = array(
+                "fcmToken" => $_GET['fcmToken'],
+                "userId" => $_GET['userId'],
+                "name" => $_GET['name'],
+                "appname" => $_GET['appname'],
+                "lang" => $_GET['lang']
+            );
+            // store user data
+            $userTable = "https://$projectId.supabase.co/rest/v1/users";
+            $user = storeUserData($userTable, $headers, $userData);
             
-            echo json_encode(array("streaks" => $streaks, "milestones" => $milestones, "restore_streak_saved" => 0));
+            // Get pause log data
+            $pauseLogUrl = "https://$projectId.supabase.co/rest/v1/streakPauseLog";
+            $pauseLogData = getAllStreakLogsApp($pauseLogUrl, $headers, array(
+                'appname' => $_GET['appname'],
+                'userId' => $_GET['userId'],
+                'order' => ['created_at' => 'desc']
+            ));
+            
+            // Extract all dates from pause log entries
+            $pauseDates = array_reduce($pauseLogData, function($carry, $pauseEntry) {
+                if (isset($pauseEntry['paused_at']) && isset($pauseEntry['resumed_at'])) {
+                    $pausedAt = new DateTime($pauseEntry['paused_at']);
+                    $resumedAt = new DateTime($pauseEntry['resumed_at']);
+                    
+                    // Add all dates from paused_at to resumed_at (inclusive)
+                    $currentDate = clone $pausedAt;
+                    while ($currentDate <= $resumedAt) {
+                        $carry[] = $currentDate->format('Y-m-d');
+                        $currentDate->modify('+1 day');
+                    }
+                }
+                return $carry;
+            }, array());
+            
+            // Add pause dates to existing streak_marked dates
+            if (!empty($pauseDates)) {
+                rsort($pauseDates); // Sort in descending order
+                $streaks['pause_marked'] = $pauseDates;
+            }
+            
+            echo json_encode(array("streaks" => $streaks, "milestones" => $milestones, "restore_streak_saved" => 0, "pauseLog" => $pauseLogData));
             
             exit;
 
@@ -505,6 +580,7 @@
             else{
                 // Check pause logic for streak continuation (for mock data, we need to get the last streak before the mock date)
                 $baseUrlPaused = "https://$projectId.supabase.co/rest/v1/streakPause";
+                $pauseLogUrl = "https://$projectId.supabase.co/rest/v1/streakPauseLog";
                 $params = array(
                     'appname' => $_GET['appname'],
                     'userId' => $_GET['userId'],
@@ -520,7 +596,7 @@
                     'limit' => 1
                 ));
                 
-                $count = getStreakCountWithPauseLogic($baseUrl, $baseUrlPaused, $headers, $params, $lastStreakLog);
+                $count = getStreakCountWithPauseLogic($baseUrl, $baseUrlPaused, $pauseLogUrl, $headers, $params, $lastStreakLog);
             }
             // echo $count;exit;
             $payloadToInsert['count'] = $count;
@@ -580,10 +656,27 @@
             $usersMissingStreakFunctionUrl = "https://$projectId.supabase.co/rest/v1/rpc/users_missing_streak";
             $baseUrlMilestones = "https://$projectId.supabase.co/rest/v1/milestones";
             $baseUrlUserMilestones = "https://$projectId.supabase.co/rest/v1/userMilestones";
+            $usersEligibleForMilestoneTomorrowFunctionUrl = "https://$projectId.supabase.co/rest/v1/rpc/get_eligible_users_for_tomorrow_milestone";
             $today = date('Y-m-d');
             $usersToNotify = getUsersForStreakNotification($usersMissingStreakFunctionUrl, $userTableUrl, $streakLogTableUrl, $headers, $appname, $today);
-            sendFCMMessage($usersToNotify, $streakLogTableUrl, $baseUrlMilestones, $baseUrlUserMilestones, $today, $headers);
+            // echo json_encode($usersToNotify);exit;
+            sendFCMMessage($usersToNotify, $streakLogTableUrl, $baseUrlMilestones, $baseUrlUserMilestones, $today, $headers, $tomorrow_milestone = false);
 
+        break;
+        case "admin-send-notification-tomorrow-milestone-eligible-users":
+            // Get users who would be eligible for a milestone by logging tomorrow's streak
+            $appname = $_GET['appname'] ?? null; // Optional: filter by specific app
+            $userTableUrl = "https://$projectId.supabase.co/rest/v1/users";
+            $streakLogTableUrl = "https://$projectId.supabase.co/rest/v1/streakLog";
+            $usersMissingStreakFunctionUrl = "https://$projectId.supabase.co/rest/v1/rpc/users_missing_streak";
+            $baseUrlMilestones = "https://$projectId.supabase.co/rest/v1/milestones";
+            $baseUrlUserMilestones = "https://$projectId.supabase.co/rest/v1/userMilestones";
+            $usersEligibleForMilestoneTomorrowFunctionUrl = "https://$projectId.supabase.co/rest/v1/rpc/get_eligible_users_for_tomorrow_milestone";
+            $mock_date = $_GET['mock_date'] ?? null; // Optional: mock date for testing
+            $milestoneEligibleUsers = getUsersEligibleForMilestoneTomorrow($usersEligibleForMilestoneTomorrowFunctionUrl, $userTableUrl, $streakLogTableUrl, $baseUrlMilestones, $baseUrlUserMilestones, $headers, $appname, $mock_date);
+            // echo json_encode($milestoneEligibleUsers);exit;
+            // $today = date('Y-m-d');
+            sendFCMMessage($milestoneEligibleUsers, $streakLogTableUrl, $baseUrlMilestones, $baseUrlUserMilestones, $mock_date, $headers, $tomorrow_milestone = true);
         break;
         default:
             http_response_code(401);
@@ -948,6 +1041,18 @@
 
     // Insert new user milestone
     function pauseResumeStreak($url, $headers, $data) {
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+        $res = curl_exec($ch);
+        curl_close($ch);
+        return json_decode($res, true);
+    }
+
+    function pauseResumeStreakLog($url, $headers, $data) {
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_POST, true);
@@ -1401,7 +1506,7 @@
     }
 
     // Scenario 1: Check if pause was activated at the right time to continue streak (original logic)
-    function checkPauseActivationForStreak_Scenario1($baseUrlPaused, $headers, $params, $lastStreakDate = null) {
+    function checkPauseActivationForStreak_Scenario1($baseUrlPaused, $pauseLogUrl, $headers, $params, $lastStreakDate = null) {
         $appname = $params['appname'];
         $userId = $params['userId'];
         
@@ -1460,6 +1565,16 @@
             $id = $pauseRecord['id'];
             $triggered_at = isset($_GET['date']) ? $_GET['date'] : date('c');
             updatePauseResumeStreak($baseUrlPaused, $headers, $id, array("is_pause" => "0", "triggered_at" => $triggered_at));
+            
+            // Log the resume activity in pause log
+            $latestPauseLog = getLatestPauseLogWithoutResume($pauseLogUrl, $headers, array('appname' => $appname, 'userId' => $userId));
+            if ($latestPauseLog) {
+                $pauseLogId = $latestPauseLog[0]['id'];
+                $updatePauseLogData = array(
+                    "resumed_at" => $triggered_at
+                );
+                updatePauseLog($pauseLogUrl, $headers, $pauseLogId, $updatePauseLogData);
+            }
         }
         
         return $pauseIsValid;
@@ -1528,7 +1643,7 @@
     }
 
     // Get the appropriate streak count considering pause logic
-    function getStreakCountWithPauseLogic($baseUrl, $baseUrlPaused, $headers, $params, $lastStreakLog = null) {
+    function getStreakCountWithPauseLogic($baseUrl, $baseUrlPaused, $pauseLogUrl, $headers, $params, $lastStreakLog = null) {
         $appname = $params['appname'];
         $userId = $params['userId'];
         $streakSku = $params['streakSku'];
@@ -1553,7 +1668,7 @@
         $lastStreakCount = (int)$lastStreakData['count'];
         
         // Check if pause was activated properly - SCENARIO 1 (Original Logic)
-        $pauseActivatedProperly = checkPauseActivationForStreak_Scenario1($baseUrlPaused, $headers, $params, $lastStreakDate);
+        $pauseActivatedProperly = checkPauseActivationForStreak_Scenario1($baseUrlPaused, $pauseLogUrl, $headers, $params, $lastStreakDate);
         
         // Check if pause was activated properly - SCENARIO 2 (New Logic) - COMMENTED OUT
         // $pauseActivatedProperly = checkPauseActivationForStreak_Scenario2($baseUrlPaused, $headers, $params, $lastStreakDate);
@@ -1613,40 +1728,58 @@
         return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
     }
 
-    function sendFCMMessage($users, $streakLogTableUrl, $baseUrlMilestones, $baseUrlUserMilestones, $today, $headers) {
-        // echo json_encode($users);
-        // exit;
-        foreach ($users as $user) {
-            $milestonesOfApps = getStreakSkuOfAMilestone($baseUrlMilestones, $headers, array("appname" => $user['appname']));
-            $streakSku = $milestonesOfApps[0]["streakSku"];
-            $appid = 'low.carb.recipes.diet';
-            $fcmToken = $user['fcmToken'];
-            $checkYesterdayStreakLogged = checkYesterdayStreakLoggedNotification($streakLogTableUrl, $headers, array('appname' => $user['appname'], 'userId' => $user['userId'], 'streakSku' => $streakSku), $today);
-            if ($checkYesterdayStreakLogged) {
-                $count = (int)$checkYesterdayStreakLogged[0]['count'] + 1;
-                $checkAnyMilestoneExist = checkAnyMilestoneExist($baseUrlMilestones, $headers, array('streakSku' => $streakSku, 'streakCount' => $count, 'appname' => $user['appname']));
-                if ($checkAnyMilestoneExist) {
-                    $checkAnyMilestoneExistIsAchieved = checkAnyMilestoneExistIsAchieved($baseUrlUserMilestones, $headers, array('milestoneSku' => $checkAnyMilestoneExist[0]['sku'], 'appname' => $user['appname'], "userId" => $user['userId']));
-                    if($checkAnyMilestoneExistIsAchieved == false){
-                        $title = "Knowledge Milestone Approaching! 🚀";
+    function sendFCMMessage($users, $streakLogTableUrl, $baseUrlMilestones, $baseUrlUserMilestones, $today, $headers, $tomorrow_milestone) {
+        if($tomorrow_milestone == true){
+            foreach ($users as $user) {
+                $appid = 'low.carb.recipes.diet';
+                $fcmToken = $user['fcmToken'];
+                $title = "The Final Page Beckons! 🪶";
+                // Extract first name only
+                $firstName = explode(' ', trim($user['name']))[0];
+                $subtitle = str_replace(['%name%', '%milestone_day%'], [$firstName, $user['milestone']['name']], "%name%, the %milestone_day% milestone is just around the corner! Get ready to unlock your reward. 🗝️");
+                break;
+            }
+        }
+        else{
+            foreach ($users as $user) {
+                $milestonesOfApps = getStreakSkuOfAMilestone($baseUrlMilestones, $headers, array("appname" => $user['appname']));
+                $streakSku = $milestonesOfApps[0]["streakSku"];
+                $appid = 'low.carb.recipes.diet';
+                $fcmToken = $user['fcmToken'];
+                $checkYesterdayStreakLogged = checkYesterdayStreakLoggedNotification($streakLogTableUrl, $headers, array('appname' => $user['appname'], 'userId' => $user['userId'], 'streakSku' => $streakSku), $today);
+                if ($checkYesterdayStreakLogged) {
+                    $count = (int)$checkYesterdayStreakLogged[0]['count'] + 1;
+                    $checkAnyMilestoneExist = checkAnyMilestoneExist($baseUrlMilestones, $headers, array('streakSku' => $streakSku, 'streakCount' => $count, 'appname' => $user['appname']));
+                    if ($checkAnyMilestoneExist) {
+                        $checkAnyMilestoneExistIsAchieved = checkAnyMilestoneExistIsAchieved($baseUrlUserMilestones, $headers, array('milestoneSku' => $checkAnyMilestoneExist[0]['sku'], 'appname' => $user['appname'], "userId" => $user['userId']));
+                        if($checkAnyMilestoneExistIsAchieved == false){
+                            // Milestone break notification
+    
+                            $title = "Knowledge Milestone Approaching! 🚀";
+                            // Extract first name only
+                            $firstName = explode(' ', trim($user['name']))[0];
+                            $subtitle = str_replace(['%name%', '%milestone_day%'], [$firstName, $checkAnyMilestoneExist[0]['name']], "%name%, %milestone_day% summaries await! One last push to unlock your next reading milestone 💪");
+                        }
+                    }
+                    else{
+                        // Streak break notification
+    
+                        $title = "Your streak have been ended";
                         // Extract first name only
                         $firstName = explode(' ', trim($user['name']))[0];
-                        $subtitle = str_replace(['%name%', '%milestone_day%'], [$firstName, $checkAnyMilestoneExist[0]['name']], "%name%, %milestone_day% summaries await! One last push to unlock your next reading milestone 💪");
+                        $subtitle = str_replace(['%name%', '%streak_day%'], [$firstName, $count], "%name%, your mind craves those 15 minutes! Don't break your %streak_day%-day reading habit now 🧠");
                     }
                 }
                 else{
                     $title = "Your streak have been ended";
-                    // Extract first name only
-                    $firstName = explode(' ', trim($user['name']))[0];
-                    $subtitle = str_replace(['%name%', '%streak_day%'], [$firstName, $count], "%name%, your mind craves those 15 minutes! Don't break your %streak_day%-day reading habit now 🧠");
+                    $subtitle = "kjn";
                 }
+                break;
             }
-            else{
-                $title = "Your streak have been ended";
-                $subtitle = "kjn";
-            }
-            break;
         }
+        // echo json_encode($users);
+        // exit;
+        
         // echo $title . '<br>' . $subtitle;
         // exit;
         $video_series_1_full_apps = array("african.braids.hairstyle", "com.rstream.beautyvideos", "beauty.skin.care.app", "com.rstream.booksummaries", "com.rstream.calmingmusic", "draw.cartoon.characters", "com.recipes.cookingvideos", "com.rstream.crafts", "com.rstream.crockpotrecipes", "com.rstream.dailywellness", "com.rstream.beautycare", "learn.drawing.tattoos", "easyworkout.workoutforwomen.homegym.beginnerexercise", "com.makeup.eye", "glowing.skin.face.yoga", "girls.pedicure.manicure", "com.rstream.exercisevideos", "com.rstream.haircare", "com.rstream.hairstyles", "short.hairstyles.steps", "rstream.scarf.hijabs", "home.diy.idea", "home.diy.ideas", "ketorecipes.vegetarian", "com.rstream.ketorecipes", "com.rstream.kidsvideos", "com.rstream.kidscrafts", "com.kids.learndrawing", "com.rstream.learndrawing", "learn.instruments.free", "learn.languages.free", "learn.magic.tricks", "com.rstream.piano", "com.rstream.lifehacks", "com.rstream.kidssongs", "draw.glow.mandalas", "guided.meditation.for.work", "com.rstream.mindfulness", "com.rstream.nailart", "com.rstream.nailartdesigns", "com.riatech.beautyvideos", "outfit.planner.ideas.fashion", "rstream.diy.papercrafts", "com.rstream.travel", "com.rstream.yogatraining");
@@ -1851,5 +1984,179 @@
         }
         
         return $users;
+    }
+
+    // Get users who would be eligible for a milestone by logging tomorrow's streak
+    function getUsersEligibleForMilestoneTomorrow($usersEligibleForMilestoneTomorrowFunctionUrl, $userTableUrl, $streakLogTableUrl, $baseUrlMilestones, $baseUrlUserMilestones, $headers, $appname = null, $mock_date = null) {
+        // $today = $mock_date ? date('Y-m-d', strtotime($mock_date)) : date('Y-m-d');
+        // $usersEligibleForMilestoneTomorrowFunctionUrl .= "?input_date=" . urlencode($today);
+        // $ch = curl_init($usersEligibleForMilestoneTomorrowFunctionUrl);
+        // curl_setopt_array($ch, [
+        //     CURLOPT_RETURNTRANSFER => true,
+        //     CURLOPT_HTTPHEADER => $headers
+        // ]);
+        // $response = curl_exec($ch);
+        // curl_close($ch);
+        // echo $response;exit;
+        // return json_decode($response, true);
+        // Get all users (or filter by appname if provided)
+        $queryUrl = $userTableUrl;
+        if ($appname) {
+            $queryUrl .= "?appname=eq." . urlencode($appname);
+        }
+        
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $queryUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        $response = curl_exec($ch);
+        curl_close($ch);
+        
+        $users = json_decode($response, true);
+        if (empty($users)) {
+            return [];
+        }
+        
+        $eligibleUsers = [];
+        $today = $mock_date ? date('Y-m-d', strtotime($mock_date)) : date('Y-m-d');
+        
+        foreach ($users as $user) {
+            $userId = $user['userId'];
+            $userAppname = $user['appname'];
+            
+            // Get the streak SKU for this app
+            $milestonesOfApps = getStreakSkuOfAMilestone($baseUrlMilestones, $headers, array("appname" => $userAppname));
+            if (empty($milestonesOfApps)) {
+                continue; // No milestones for this app
+            }
+            
+            $streakSku = $milestonesOfApps[0]["streakSku"];
+            
+            // Get the latest streak log for this user and app
+            $latestStreakLog = getAllStreakLogsApp($streakLogTableUrl, $headers, array(
+                'appname' => $userAppname, 
+                'userId' => $userId, 
+                'streakSku' => $streakSku,
+                'order' => ['created_at' => 'desc'],
+                'limit' => 1
+            ));
+            
+            if (empty($latestStreakLog)) {
+                continue; // User has no streak logs
+            }
+            
+            $currentStreakCount = (int)$latestStreakLog[0]['count'];
+            
+            // Check if streak is still valid (not broken)
+            $lastStreakDate = $latestStreakLog[0]['created_at'];
+            $lastStreakDateOnly = date('Y-m-d', strtotime($lastStreakDate));
+            $yesterday = $mock_date ? date('Y-m-d', strtotime($mock_date . ' -1 day')) : date('Y-m-d', strtotime('-1 day'));
+            
+            // Streak is broken if last streak was more than 1 day ago
+            if ($lastStreakDateOnly < $yesterday) {
+                continue; // Streak is broken, skip this user
+            }
+            
+            // Check if user has logged today's streak (using mock date if provided)
+            if ($mock_date) {
+                $todayStreakLogged = getStreakLogDataMock($streakLogTableUrl, $headers, array(
+                    'appname' => $userAppname, 
+                    'userId' => $userId, 
+                    'streakSku' => $streakSku
+                ), $mock_date);
+            } else {
+                $todayStreakLogged = getStreakLogData($streakLogTableUrl, $headers, array(
+                    'appname' => $userAppname, 
+                    'userId' => $userId, 
+                    'streakSku' => $streakSku
+                ));
+            }
+            
+            // Determine which streak count to check for milestone eligibility
+            if (!empty($todayStreakLogged)) {
+                // Option A: Today is marked, check if current+1 = milestone
+                $nextStreakCount = $currentStreakCount + 1;
+            } else {
+                // Option B: Today is NOT marked, check if current+2 = milestone
+                $nextStreakCount = $currentStreakCount + 2;
+            }
+            
+            // Check if there's a milestone for the calculated streak count
+            $milestoneForNextCount = checkAnyMilestoneExist($baseUrlMilestones, $headers, array(
+                'streakSku' => $streakSku, 
+                'streakCount' => $nextStreakCount, 
+                'appname' => $userAppname
+            ));
+            
+            if ($milestoneForNextCount) {
+                // Check if this milestone is already achieved
+                $milestoneAlreadyAchieved = checkAnyMilestoneExistIsAchieved($baseUrlUserMilestones, $headers, array(
+                    'milestoneSku' => $milestoneForNextCount[0]['sku'], 
+                    'appname' => $userAppname, 
+                    'userId' => $userId
+                ));
+                
+                if (!$milestoneAlreadyAchieved) {
+                    // User is eligible for this milestone
+                    $eligibleUsers[] = array(
+                        'userId' => $userId,
+                        'appname' => $userAppname,
+                        'name' => $user['name'] ?? '',
+                        'fcmToken' => $user['fcmToken'] ?? '',
+                        'currentStreakCount' => $currentStreakCount,
+                        'nextStreakCount' => $nextStreakCount,
+                        'todayMarked' => !empty($todayStreakLogged),
+                        'mock_date' => $mock_date,
+                        'milestone' => array(
+                            'id' => $milestoneForNextCount[0]['id'],
+                            'sku' => $milestoneForNextCount[0]['sku'],
+                            'name' => $milestoneForNextCount[0]['name'],
+                            'description' => $milestoneForNextCount[0]['description'],
+                            'streakCount' => $milestoneForNextCount[0]['streakCount']
+                        )
+                    );
+                }
+            }
+        }
+        
+        return $eligibleUsers;
+    }
+
+    // Get the latest pause log entry that doesn't have a resumed_at value
+    function getLatestPauseLogWithoutResume($url, $headers, $filters) {
+        foreach ($filters as $key => $value) {
+            if (is_array($value)) {
+                foreach ($value as $operator => $v) {
+                    $queryParts[] = "$key=" . $operator . "." . urlencode($v);
+                }
+            } else {
+                $queryParts[] = "$key=eq." . urlencode($value);
+            }
+        }
+        $queryUrl = "$url?" . implode('&', $queryParts) . "&resumed_at=is.null&order=created_at.desc&limit=1";
+        $queryUrl = str_replace(" ", "%20", $queryUrl);
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $queryUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        $response = curl_exec($ch);
+        curl_close($ch);
+    
+        $data = json_decode($response, true);
+        return !empty($data) ? $data : false;
+    }
+
+    // Update pause log entry
+    function updatePauseLog($url, $headers, $id, $data) {
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, "$url?id=eq.$id");
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PATCH");
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+        $res = curl_exec($ch);
+        curl_close($ch);
+        return json_decode($res, true);
     }
 ?>
