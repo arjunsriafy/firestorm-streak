@@ -12,4 +12,4 @@ jobs:
     steps:
       - name: Call Render PHP Script for Notifications
         run: |
-          curl -X GET "https://firestorm-streak.onrender.com/app/health-check?action=admin-send-notification"
+          curl -X GET "https://firestorm-streak.onrender.com/app/health-check"
