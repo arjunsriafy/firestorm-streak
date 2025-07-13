@@ -240,26 +240,79 @@
                         exit;
                     }
                 }
+                elseif(isset($getStreakData[0]['streakType']) && $getStreakData[0]['streakType'] == 'weekly'){
+                    $existsThisWeekStreak = getStreakLogDataThisWeek($baseUrl, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId'], 'streakSku' => $streakSku));
+                    if ($existsThisWeekStreak) {
+                        http_response_code(403);
+                        echo json_encode(array("status" => "error", "message" => "This streak is already marked this week"));
+                        exit;
+                    }
+                }
             }
             else{
                 http_response_code(403);
                 echo json_encode(array("status" => "error", "message" => "This streak not exist for this app"));
                 exit;
             }
-            $checkYesterdayStreakLogged = checkYesterdayStreakLogged($baseUrl, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId'], 'streakSku' => $streakSku));
-            if ($checkYesterdayStreakLogged) {
-                $count = (int)$checkYesterdayStreakLogged[0]['count'] + 1;
+            // Determine streak type and check accordingly
+            $streakType = $getStreakData[0]['streakType'] ?? 'daily';
+            
+            if ($streakType == 'daily') {
+                $checkYesterdayStreakLogged = checkYesterdayStreakLogged($baseUrl, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId'], 'streakSku' => $streakSku));
+                if ($checkYesterdayStreakLogged) {
+                    $count = (int)$checkYesterdayStreakLogged[0]['count'] + 1;
+                }
+                else{
+                    // Check pause logic for streak continuation
+                    $baseUrlPaused = "https://$projectId.supabase.co/rest/v1/streakPause";
+                    $pauseLogUrl = "https://$projectId.supabase.co/rest/v1/streakPauseLog";
+                    $params = array(
+                        'appname' => $_GET['appname'],
+                        'userId' => $_GET['userId'],
+                        'streakSku' => $streakSku
+                    );
+                    $count = getStreakCountWithPauseLogic($baseUrl, $baseUrlPaused, $pauseLogUrl, $headers, $params);
+                }
             }
-            else{
-                // Check pause logic for streak continuation
+            elseif ($streakType == 'weekly') {
+                // Auto-resume pause if logging a streak while paused
                 $baseUrlPaused = "https://$projectId.supabase.co/rest/v1/streakPause";
                 $pauseLogUrl = "https://$projectId.supabase.co/rest/v1/streakPauseLog";
-                $params = array(
-                    'appname' => $_GET['appname'],
-                    'userId' => $_GET['userId'],
-                    'streakSku' => $streakSku
-                );
-                $count = getStreakCountWithPauseLogic($baseUrl, $baseUrlPaused, $pauseLogUrl, $headers, $params);
+                
+                // Check if user is currently paused
+                $pauseData = checkPauseExist($baseUrlPaused, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId']));
+                if ($pauseData && !empty($pauseData) && $pauseData[0]['is_pause'] == "1") {
+                    // User is paused, auto-resume
+                    $pauseId = $pauseData[0]['id'];
+                    $triggered_at = date('c');
+                    
+                    // Update streakPause table
+                    updatePauseResumeStreak($baseUrlPaused, $headers, $pauseId, array("is_pause" => "0", "triggered_at" => $triggered_at));
+                    
+                    // Update streakPauseLog table
+                    $latestPauseLog = getLatestPauseLogWithoutResume($pauseLogUrl, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId']));
+                    if ($latestPauseLog) {
+                        $pauseLogId = $latestPauseLog[0]['id'];
+                        $updatePauseLogData = array(
+                            "resumed_at" => $triggered_at
+                        );
+                        updatePauseLog($pauseLogUrl, $headers, $pauseLogId, $updatePauseLogData);
+                    }
+                }
+                
+                $checkLastWeekStreakLogged = checkLastWeekStreakLogged($baseUrl, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId'], 'streakSku' => $streakSku));
+                if ($checkLastWeekStreakLogged) {
+                    $count = (int)$checkLastWeekStreakLogged[0]['count'] + 1;
+                }
+                else{
+                    // Check pause logic for weekly streak continuation
+                    $params = array(
+                        'appname' => $_GET['appname'],
+                        'userId' => $_GET['userId'],
+                        'streakSku' => $streakSku
+                    );
+                    $count = getWeeklyStreakCountWithPauseLogic($baseUrl, $baseUrlPaused, $pauseLogUrl, $headers, $params);
+                }
             }
             // echo $count;exit;
             $payloadToInsert['count'] = $count;
@@ -676,36 +729,99 @@
                         exit;
                     }
                 }
+                elseif(isset($getStreakData[0]['streakType']) && $getStreakData[0]['streakType'] == 'weekly'){
+                    $existsThisWeekStreak = getStreakLogDataThisWeekMock($baseUrl, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId'], 'streakSku' => $streakSku), $mock_date);
+                    if ($existsThisWeekStreak) {
+                        http_response_code(403);
+                        echo json_encode(array("status" => "error", "message" => "This streak is already marked this week"));
+                        exit;
+                    }
+                }
             }
             else{
                 http_response_code(403);
                 echo json_encode(array("status" => "error", "message" => "This streak not exist for this app"));
                 exit;
             }
-            $checkYesterdayStreakLogged = checkYesterdayStreakLoggedMock($baseUrl, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId'], 'streakSku' => $streakSku), $mock_date);
-            if ($checkYesterdayStreakLogged) {
-                $count = (int)$checkYesterdayStreakLogged[0]['count'] + 1;
+            // Determine streak type and check accordingly for mock data
+            $streakType = $getStreakData[0]['streakType'] ?? 'daily';
+            
+            if ($streakType == 'daily') {
+                $checkYesterdayStreakLogged = checkYesterdayStreakLoggedMock($baseUrl, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId'], 'streakSku' => $streakSku), $mock_date);
+                if ($checkYesterdayStreakLogged) {
+                    $count = (int)$checkYesterdayStreakLogged[0]['count'] + 1;
+                }
+                else{
+                    // Check pause logic for streak continuation (for mock data, we need to get the last streak before the mock date)
+                    $baseUrlPaused = "https://$projectId.supabase.co/rest/v1/streakPause";
+                    $pauseLogUrl = "https://$projectId.supabase.co/rest/v1/streakPauseLog";
+                    $params = array(
+                        'appname' => $_GET['appname'],
+                        'userId' => $_GET['userId'],
+                        'streakSku' => $streakSku
+                    );
+                    
+                    // Get the last streak log before the mock date
+                    $lastStreakLog = getAllStreakLogsApp($baseUrl, $headers, array(
+                        'appname' => $_GET['appname'], 
+                        'userId' => $_GET['userId'], 
+                        'streakSku' => $streakSku,
+                        'order' => ['created_at' => 'desc'],
+                        'limit' => 1
+                    ));
+                    
+                    $count = getStreakCountWithPauseLogic($baseUrl, $baseUrlPaused, $pauseLogUrl, $headers, $params, $lastStreakLog);
+                }
             }
-            else{
-                // Check pause logic for streak continuation (for mock data, we need to get the last streak before the mock date)
+            elseif ($streakType == 'weekly') {
+                // Auto-resume pause if logging a streak while paused
                 $baseUrlPaused = "https://$projectId.supabase.co/rest/v1/streakPause";
                 $pauseLogUrl = "https://$projectId.supabase.co/rest/v1/streakPauseLog";
-                $params = array(
-                    'appname' => $_GET['appname'],
-                    'userId' => $_GET['userId'],
-                    'streakSku' => $streakSku
-                );
                 
-                // Get the last streak log before the mock date
-                $lastStreakLog = getAllStreakLogsApp($baseUrl, $headers, array(
-                    'appname' => $_GET['appname'], 
-                    'userId' => $_GET['userId'], 
-                    'streakSku' => $streakSku,
-                    'order' => ['created_at' => 'desc'],
-                    'limit' => 1
-                ));
+                // Check if user is currently paused
+                $pauseData = checkPauseExist($baseUrlPaused, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId']));
+                if ($pauseData && !empty($pauseData) && $pauseData[0]['is_pause'] == "1") {
+                    // User is paused, auto-resume
+                    $pauseId = $pauseData[0]['id'];
+                    $triggered_at = $mock_date ? date('c', strtotime($mock_date)) : date('c');
+                    
+                    // Update streakPause table
+                    updatePauseResumeStreak($baseUrlPaused, $headers, $pauseId, array("is_pause" => "0", "triggered_at" => $triggered_at));
+                    
+                    // Update streakPauseLog table
+                    $latestPauseLog = getLatestPauseLogWithoutResume($pauseLogUrl, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId']));
+                    if ($latestPauseLog) {
+                        $pauseLogId = $latestPauseLog[0]['id'];
+                        $updatePauseLogData = array(
+                            "resumed_at" => $triggered_at
+                        );
+                        updatePauseLog($pauseLogUrl, $headers, $pauseLogId, $updatePauseLogData);
+                    }
+                }
                 
-                $count = getStreakCountWithPauseLogic($baseUrl, $baseUrlPaused, $pauseLogUrl, $headers, $params, $lastStreakLog);
+                $checkLastWeekStreakLogged = checkLastWeekStreakLoggedMock($baseUrl, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId'], 'streakSku' => $streakSku), $mock_date);
+                if ($checkLastWeekStreakLogged) {
+                    $count = (int)$checkLastWeekStreakLogged[0]['count'] + 1;
+                }
+                else{
+                    // Check pause logic for weekly streak continuation (for mock data)
+                    $params = array(
+                        'appname' => $_GET['appname'],
+                        'userId' => $_GET['userId'],
+                        'streakSku' => $streakSku
+                    );
+                    
+                    // Get the last streak log before the mock date
+                    $lastStreakLog = getAllStreakLogsApp($baseUrl, $headers, array(
+                        'appname' => $_GET['appname'], 
+                        'userId' => $_GET['userId'], 
+                        'streakSku' => $streakSku,
+                        'order' => ['created_at' => 'desc'],
+                        'limit' => 1
+                    ));
+                    
+                    $count = getWeeklyStreakCountWithPauseLogic($baseUrl, $baseUrlPaused, $pauseLogUrl, $headers, $params, $lastStreakLog);
+                }
             }
             // echo $count;exit;
             $payloadToInsert['count'] = $count;
@@ -2495,5 +2611,292 @@
         }
         
         return false;
+    }
+
+    // Weekly streak functions
+
+    // Get streak log data for current week (Sunday to Saturday)
+    function getStreakLogDataThisWeek($url, $headers, $filters) {
+        $today = new DateTime();
+        $weekStart = clone $today;
+        $weekStart->modify('this week sunday');
+        $weekEnd = clone $weekStart;
+        $weekEnd->modify('+6 days');
+        
+        $weekStartStr = $weekStart->format('Y-m-d') . 'T00:00:00';
+        $weekEndStr = $weekEnd->format('Y-m-d') . 'T23:59:59';
+        
+        foreach ($filters as $key => $value) {
+            if (is_array($value)) {
+                foreach ($value as $operator => $v) {
+                    $queryParts[] = "$key=" . $operator . "." . urlencode($v);
+                }
+            } else {
+                $queryParts[] = "$key=eq." . urlencode($value);
+            }
+        }
+        $queryUrl = "$url?" . implode('&', $queryParts) . "&created_at=gte.$weekStartStr&created_at=lt.$weekEndStr";
+        $queryUrl = str_replace(" ", "%20", $queryUrl);
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $queryUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        $response = curl_exec($ch);
+        curl_close($ch);
+    
+        $data = json_decode($response, true);
+        return !empty($data) ? $data : false;
+    }
+
+    // Get streak log data for current week (Sunday to Saturday) - Mock version
+    function getStreakLogDataThisWeekMock($url, $headers, $filters, $mock_date) {
+        $mockDateTime = new DateTime($mock_date);
+        
+        // Calculate the Sunday of the week containing the mock date
+        $dayOfWeek = (int)$mockDateTime->format('w'); // 0 = Sunday, 1 = Monday, etc.
+        $weekStart = clone $mockDateTime;
+        $weekStart->modify("-{$dayOfWeek} days"); // Go back to Sunday
+        
+        $weekEnd = clone $weekStart;
+        $weekEnd->modify('+6 days'); // Go to Saturday
+        
+        $weekStartStr = $weekStart->format('Y-m-d') . 'T00:00:00';
+        $weekEndStr = $weekEnd->format('Y-m-d') . 'T23:59:59';
+        
+        foreach ($filters as $key => $value) {
+            if (is_array($value)) {
+                foreach ($value as $operator => $v) {
+                    $queryParts[] = "$key=" . $operator . "." . urlencode($v);
+                }
+            } else {
+                $queryParts[] = "$key=eq." . urlencode($value);
+            }
+        }
+        $queryUrl = "$url?" . implode('&', $queryParts) . "&created_at=gte.$weekStartStr&created_at=lt.$weekEndStr";
+        $queryUrl = str_replace(" ", "%20", $queryUrl);
+
+        // Debug output
+        // echo "Mock Date: $mock_date\n";
+        // echo "Day of Week: $dayOfWeek\n";
+        // echo "Week Start: " . $weekStart->format('Y-m-d') . "\n";
+        // echo "Week End: " . $weekEnd->format('Y-m-d') . "\n";
+        // echo "Query URL: $queryUrl\n";
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $queryUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        $response = curl_exec($ch);
+        curl_close($ch);
+    
+        $data = json_decode($response, true);
+        // echo "Response: " . json_encode($data) . "\n";
+        return !empty($data) ? $data : false;
+    }
+
+    // Check if streak was logged in the previous week
+    function checkLastWeekStreakLogged($url, $headers, $filters) {
+        $today = new DateTime();
+        $lastWeekStart = clone $today;
+        $lastWeekStart->modify('last week sunday');
+        $lastWeekEnd = clone $lastWeekStart;
+        $lastWeekEnd->modify('+6 days');
+        
+        $lastWeekStartStr = $lastWeekStart->format('Y-m-d') . 'T00:00:00';
+        $lastWeekEndStr = $lastWeekEnd->format('Y-m-d') . 'T23:59:59';
+        
+        foreach ($filters as $key => $value) {
+            if (is_array($value)) {
+                foreach ($value as $operator => $v) {
+                    $queryParts[] = "$key=" . $operator . "." . urlencode($v);
+                }
+            } else {
+                $queryParts[] = "$key=eq." . urlencode($value);
+            }
+        }
+        $queryUrl = "$url?" . implode('&', $queryParts) . "&created_at=gte.$lastWeekStartStr&created_at=lt.$lastWeekEndStr";
+        $queryUrl = str_replace(" ", "%20", $queryUrl);
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $queryUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        $response = curl_exec($ch);
+        curl_close($ch);
+    
+        $data = json_decode($response, true);
+        return !empty($data) ? $data : false;
+    }
+
+    // Check if streak was logged in the previous week - Mock version
+    function checkLastWeekStreakLoggedMock($url, $headers, $filters, $mock_date) {
+        $mockDateTime = new DateTime($mock_date);
+        
+        // Calculate the Sunday of the week containing the mock date
+        $dayOfWeek = (int)$mockDateTime->format('w'); // 0 = Sunday, 1 = Monday, etc.
+        $currentWeekStart = clone $mockDateTime;
+        $currentWeekStart->modify("-{$dayOfWeek} days"); // Go back to Sunday
+        
+        // Calculate last week's Sunday (7 days before current week start)
+        $lastWeekStart = clone $currentWeekStart;
+        $lastWeekStart->modify('-7 days');
+        
+        $lastWeekEnd = clone $lastWeekStart;
+        $lastWeekEnd->modify('+6 days'); // Go to Saturday
+        
+        $lastWeekStartStr = $lastWeekStart->format('Y-m-d') . 'T00:00:00';
+        $lastWeekEndStr = $lastWeekEnd->format('Y-m-d') . 'T23:59:59';
+        
+        foreach ($filters as $key => $value) {
+            if (is_array($value)) {
+                foreach ($value as $operator => $v) {
+                    $queryParts[] = "$key=" . $operator . "." . urlencode($v);
+                }
+            } else {
+                $queryParts[] = "$key=eq." . urlencode($value);
+            }
+        }
+        $queryUrl = "$url?" . implode('&', $queryParts) . "&created_at=gte.$lastWeekStartStr&created_at=lt.$lastWeekEndStr";
+        $queryUrl = str_replace(" ", "%20", $queryUrl);
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $queryUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        $response = curl_exec($ch);
+        curl_close($ch);
+    
+        $data = json_decode($response, true);
+        return !empty($data) ? $data : false;
+    }
+
+    // Get the appropriate weekly streak count considering pause logic
+    function getWeeklyStreakCountWithPauseLogic($baseUrl, $baseUrlPaused, $pauseLogUrl, $headers, $params, $lastStreakLog = null) {
+        $appname = $params['appname'];
+        $userId = $params['userId'];
+        $streakSku = $params['streakSku'];
+        
+        // If no last streak log provided, get it
+        if (!$lastStreakLog) {
+            $lastStreakLog = getAllStreakLogsApp($baseUrl, $headers, array(
+                'appname' => $appname, 
+                'userId' => $userId, 
+                'streakSku' => $streakSku,
+                'order' => ['created_at' => 'desc'],
+                'limit' => 1
+            ));
+        }
+        
+        if (empty($lastStreakLog)) {
+            return 1; // First streak
+        }
+        
+        $lastStreakData = $lastStreakLog[0];
+        $lastStreakDate = $lastStreakData['created_at'];
+        $lastStreakCount = (int)$lastStreakData['count'];
+        
+        // Check if pause was activated properly for weekly streaks
+        $pauseActivatedProperly = checkWeeklyPauseActivationForStreak($baseUrlPaused, $pauseLogUrl, $headers, $params, $lastStreakDate);
+        
+        // Debug output
+        // echo "Last streak date: " . $lastStreakDate . "\n";
+        // echo "Last streak count: " . $lastStreakCount . "\n";
+        // echo "Pause activated properly: " . ($pauseActivatedProperly ? "true" : "false") . "\n";
+        
+        if ($pauseActivatedProperly) {
+            // Continue streak: last count + 1
+            return $lastStreakCount + 1;
+        } else {
+            // Reset streak: count = 1 (either no pause record or pause not activated properly)
+            return 1;
+        }
+    }
+
+    // Check if pause was activated properly for weekly streaks
+    function checkWeeklyPauseActivationForStreak($baseUrlPaused, $pauseLogUrl, $headers, $params, $lastStreakDate = null) {
+        $appname = $params['appname'];
+        $userId = $params['userId'];
+        
+        // If no last streak date provided, get it from the database
+        if (!$lastStreakDate) {
+            global $baseUrl;
+            $lastStreakLog = getAllStreakLogsApp($baseUrl, $headers, array(
+                'appname' => $appname, 
+                'userId' => $userId, 
+                'streakSku' => $params['streakSku'],
+                'order' => ['created_at' => 'desc'],
+                'limit' => 1
+            ));
+            
+            if (empty($lastStreakLog)) {
+                return false; // No previous streak found
+            }
+            
+            $lastStreakDate = $lastStreakLog[0]['created_at'];
+        }
+        
+        // Get the latest pause log entry
+        $latestPauseLog = getAllStreakLogsApp($pauseLogUrl, $headers, array(
+            'appname' => $appname,
+            'userId' => $userId,
+            'order' => ['created_at' => 'desc'],
+            'limit' => 1
+        ));
+        
+        if (empty($latestPauseLog)) {
+            return false; // No pause log entries found
+        }
+        
+        $pauseLogEntry = $latestPauseLog[0];
+        
+        // If pause is still active (not resumed), auto-resume it and continue streak
+        if (!isset($pauseLogEntry['resumed_at'])) {
+            // echo "Pause is still active, auto-resuming...\n";
+            // Auto-resume the pause
+            $pauseLogId = $pauseLogEntry['id'];
+            $triggered_at = isset($_GET['date']) ? date('c', strtotime($_GET['date'])) : date('c');
+            $updatePauseLogData = array(
+                "resumed_at" => $triggered_at
+            );
+            updatePauseLog($pauseLogUrl, $headers, $pauseLogId, $updatePauseLogData);
+            
+            // Also update the streakPause table
+            $pauseData = checkPauseExist($baseUrlPaused, $headers, array('appname' => $appname, 'userId' => $userId));
+            if ($pauseData && !empty($pauseData)) {
+                $id = $pauseData[0]['id'];
+                updatePauseResumeStreak($baseUrlPaused, $headers, $id, array("is_pause" => "0", "triggered_at" => $triggered_at));
+            }
+            
+            return true; // Continue streak - pause was active and we're resuming it
+        }
+        
+        // If pause was already resumed, check if we're logging in the same week as the resume
+        $resumedAt = new DateTime($pauseLogEntry['resumed_at']);
+        
+        // Get current logging date (either from GET parameter or current date)
+        $currentLogDate = isset($_GET['date']) ? date('Y-m-d', strtotime($_GET['date'])) : date('Y-m-d');
+        $currentLogDateTime = new DateTime($currentLogDate);
+        
+        // Check if current log is in the same week as resume
+        // Calculate the week containing the resume date
+        $resumeDayOfWeek = (int)$resumedAt->format('w'); // 0 = Sunday, 1 = Monday, etc.
+        $resumeWeekStart = clone $resumedAt;
+        $resumeWeekStart->modify("-{$resumeDayOfWeek} days"); // Go back to Sunday
+        $resumeWeekEnd = clone $resumeWeekStart;
+        $resumeWeekEnd->modify('+6 days'); // Go to Saturday
+        
+        $loggingInResumeWeek = ($currentLogDateTime >= $resumeWeekStart && $currentLogDateTime <= $resumeWeekEnd);
+        
+        // echo "Pause was already resumed at: " . $pauseLogEntry['resumed_at'] . "\n";
+        // echo "Current log date: " . $currentLogDate . "\n";
+        // echo "Resume week: " . $resumeWeekStart->format('Y-m-d') . " to " . $resumeWeekEnd->format('Y-m-d') . "\n";
+        // echo "Logging in resume week: " . ($loggingInResumeWeek ? "true" : "false") . "\n";
+        
+        if ($loggingInResumeWeek) {
+            return true; // Continue streak
+        } else {
+            return false; // Reset streak - missed the resume week
+        }
     }
 ?>
