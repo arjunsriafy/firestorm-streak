@@ -2376,6 +2376,7 @@
                 "Authorization: Bearer $authToken",
                 "Content-Type: application/json"
             ];
+            // echo json_encode($field);exit;
             
             $ch = curl_init();
             curl_setopt($ch, CURLOPT_URL, $url);
@@ -2509,17 +2510,17 @@
 
     // Get users who would be eligible for a milestone by logging tomorrow's streak
     function getUsersEligibleForMilestoneTomorrow($usersEligibleForMilestoneTomorrowFunctionUrl, $userTableUrl, $streakLogTableUrl, $baseUrlMilestones, $baseUrlUserMilestones, $headers, $appname = null, $mock_date = null) {
-        // $today = $mock_date ? date('Y-m-d', strtotime($mock_date)) : date('Y-m-d');
-        // $usersEligibleForMilestoneTomorrowFunctionUrl .= "?input_date=" . urlencode($today);
-        // $ch = curl_init($usersEligibleForMilestoneTomorrowFunctionUrl);
-        // curl_setopt_array($ch, [
-        //     CURLOPT_RETURNTRANSFER => true,
-        //     CURLOPT_HTTPHEADER => $headers
-        // ]);
-        // $response = curl_exec($ch);
-        // curl_close($ch);
+        $today = $mock_date ? date('Y-m-d', strtotime($mock_date)) : date('Y-m-d');
+        $usersEligibleForMilestoneTomorrowFunctionUrl .= "?input_date=" . urlencode($today);
+        $ch = curl_init($usersEligibleForMilestoneTomorrowFunctionUrl);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_HTTPHEADER => $headers
+        ]);
+        $response = curl_exec($ch);
+        curl_close($ch);
         // echo $response;exit;
-        // return json_decode($response, true);
+        return json_decode($response, true);
         // Get all users (or filter by appname if provided)
         $queryUrl = $userTableUrl;
         if ($appname) {
