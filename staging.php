@@ -16,6 +16,7 @@
     }
 
     $method = $_GET['method'] ?? '';
+    echo $method;exit;
     
     $projectId = 'nhvhkhlpxuvnzhorhrnd';
     $apiKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5odmhraGxweHV2bnpob3Jocm5kIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MTAyMTQ0MywiZXhwIjoyMDY2NTk3NDQzfQ.g-8ClcEkhrykKAWDdEC3La22sJq4M5IzSpgZT9H4OJg';
@@ -31,6 +32,58 @@
     $langs = array('fr', 'it', 'de', 'es', 'pl');
     switch ($method) {
         // Admin streaks
+        case "test-notification":
+            // Test notification
+            // Firebase API key
+            $serverKey = 'AAAAAkO_Jxg:APA91bGu4kXBpD5Sw_MdHskgOi0IttWXjf9YJrmgBZn7ONVtPptJmB8IdEcRcAif1Q19SS7sTninuDh1xq2YBx9czXCzGvX-Yu7N4Di74LgOWTIQxlzsUCWq5va9F5yhbsOit0UpkN8V';
+
+            // FCM token of the target device
+            $fcmToken = 'dMRhjCFjSAS-Hmr5ygqC9t:APA91bHg5nMUHVSc4TVGEFfSbVB43cwaClpahqku9moCGWaI5iU3W30M0y63kNGg8WK-gEDLrM3dHj2QWjGPlTUjkYqUu2JiTsh8cfTUFeZpxgjpeaHqco8';
+
+            // Notification payload
+            $notification = [
+                'title' => 'Hello!',
+                'body'  => 'This is a test push notification.',
+                'sound' => 'default'
+            ];
+
+            // Optional data payload
+            $data = [
+                'key1' => 'value1',
+                'key2' => 'value2'
+            ];
+
+            // Full request payload
+            $fields = [
+                'to'           => $fcmToken,
+                'notification' => $notification,
+                'data'         => $data
+            ];
+
+            // Headers
+            $headers = [
+                'Authorization: key=' . $serverKey,
+                'Content-Type: application/json'
+            ];
+
+            // Send request
+            $ch = curl_init();
+
+            curl_setopt($ch, CURLOPT_URL, 'https://fcm.googleapis.com/fcm/send');
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($fields));
+
+            $response = curl_exec($ch);
+            if ($response === FALSE) {
+                die('FCM Send Error: ' . curl_error($ch));
+            }
+
+            curl_close($ch);
+            echo 'Response: ' . $response;
+        break;
         case "get-all-streaks-admin":
             // Read all streaks admin
             $baseUrl = "https://$projectId.supabase.co/rest/v1/streaks";

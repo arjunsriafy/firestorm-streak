@@ -43,6 +43,57 @@
         case "app-health-check":
             echo json_encode(array("status" => "success", "message" => "Health check running"));
             break;
+
+        // Admin streaks
+        case "admin-store-notification":
+            echo "test";exit;
+            // Store notification
+
+            $curl = curl_init();
+
+            curl_setopt_array($curl, array(
+                CURLOPT_URL => 'https://us-central1-riafy-public.cloudfunctions.net/genesis?otherFunctions=dexDirect&type=r10-apps-ftw',
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_ENCODING => '',
+                CURLOPT_MAXREDIRS => 10,
+                CURLOPT_TIMEOUT => 0,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                CURLOPT_CUSTOMREQUEST => 'POST',
+                CURLOPT_POSTFIELDS =>'{
+                    "ask-dex": "qvj7MATCj1IIq4DoN0L0RCREve3qwDUyUadyRFx/hH0F8mPQZi8yJVTH+yA4HOno0aUXfvWBO+Pyyg5Ixt33Omtf2AwMJlwOrREfK9h2cFjOalyIIbmqtN54spxf3R9VaKe3RMhJL8/bp5EVIZaBBuEn3ftK5cc6OJCb7K2Y+BckhcuvbMvruUwTZoHIi0MVwmpB8FBFS6j+8uC75Rrxd9Ipy6Y0W5zIDRd2p/d6Y/CTuqnDUZQ5V0aDqZnkXduWoAVU63jBpPixOEd+vZZxW30c683hL+zpZtqv1THC+u84PNsAlpvfoflfE68JHPr3/tyvPytPF+UErgzRA/BDn0U/YcoKtDCLqhRgoJZCpDLUPNamROv6da97NMJD9Ox4RZrV8Jr2dTWJ9gtq81wUtZpFaglaEYAwOZMSZtdKwidVmkEAgakGohDERk9W3PS5bSDoO2Iwa6Hy5qaXEYMiYZkDW8ACGkpjmFlDu1nZjiv6a5Q1LbbRvYnCl/eRnhMFkowK7DirMB4Jvf9fcZzenVDjV5V4y5J4mVHvSIxHgW2yhsZ5R/tNkxLE9Uwit4t8bKQ2U5A5Z6yzMevNyrcJDqeTT9+f42QnxObYycxObRY0wOwK4JjmBArDdkwZZ9RvYHgeLA1Ey8iEKOyRP3jF9DBgvsYS8FTT8olYxwqFY+UJjdVNInahKg5mnc5xH7BTELZi2NXYiXNYjEqmj3qhfSvWbnu2UHVQPlPfwYHBNVCc2dsQXm93hp2uNs8qQ3Su3X8/6FEwCSkT85bnl1EAYqqCu4/O/6mPhTdzHyc9IKvpGFfNyGNBWNlf8C5P+p6FzX4BtDUujI4P8VLyOnuiE/zmFLca9NS3KueO3lLG01YXWEcQjsW2ei0adCzD46bSBnmtNGyDXiMC+whRmpqBNFYQRiq3mAi+UuUzXAnwbs4MDL4Q+Xgoh3QIHnOW/Fq2vyhtxujuBxM7DGhgJClN1W6RSPSCJxYZX2pfbqqjcmrTZS15HEfZmd/Wt8ghpNX1edA1b+G6DLHLnHpZMMb3ek73seK+JEd7XOsj2sZhKYw=",
+                    "appname": "acd",
+                    "ogQuery": "{\\n  \\"apps\\": [\\n    {\\n      \\"appid\\": \\"keto.weightloss.diet.plan\\",\\n      \\"app_name\\": \\"Keto Diet Tracker: Manage Carb\\"\\n    }\\n  ],\\n  \\"notification count\\": \\"4 for each types\\",\\n  \\"languages\\": \\"en,fr,it,de\\"\\n}",
+                    "reply-mode": "json"
+                }',
+                CURLOPT_HTTPHEADER => array(
+                    'Content-Type: application/json'
+                ),
+            ));
+
+            $response = curl_exec($curl);
+            $resp = json_decode($response, true);
+            echo json_encode($resp);
+            // exit;
+
+            curl_close($curl);
+            foreach ($resp['data']["notifications"] as $appname => $notifications) {
+                foreach ($notifications as $notification) {
+                    foreach ($notification as $lang => $localisation) {
+                        $notificationTableUrl = "https://$projectId.supabase.co/rest/v1/notifications";
+                        $notificationData = array(
+                            "title" => $localisation['title'],
+                            "subtitle" => $localisation['subtitle'],
+                            "type" => $localisation['type'],
+                            "appname" => $appname,
+                            "lang" => $lang
+                        );
+                        $storeNotification = storeNotificationData($notificationTableUrl, $headers, $notificationData);
+                        // echo json_encode($storeNotification);exit;
+                    }
+                }
+            }
+        break;
         // // Admin streaks
         // case "admin-get-all-streaks":
         //     // Read all streaks admin
@@ -220,7 +271,9 @@
                 "userId" => $_GET['userId'],
                 "name" => $_GET['name'] ?? '',
                 "appname" => $_GET['appname'],
-                "lang" => $lang
+                "lang" => $lang,
+                "timezone" => $_GET['timezone'] ?? '',
+                "platform" => $_GET['platform'] ?? 'android'
             );
             // store user data
             $userTable = "https://$projectId.supabase.co/rest/v1/users";
@@ -432,7 +485,9 @@
                 "userId" => $_GET['userId'],
                 "name" => $_GET['name'],
                 "appname" => $_GET['appname'],
-                "lang" => $_GET['lang']
+                "lang" => $_GET['lang'],
+                "timezone" => $_GET['timezone'] ?? '',
+                "platform" => $_GET['platform'] ?? 'android'
             );
             // store user data
             $userTable = "https://$projectId.supabase.co/rest/v1/users";
@@ -467,8 +522,27 @@
                 rsort($pauseDates); // Sort in descending order
                 $streaks['pause_marked'] = $pauseDates;
             }
+            else{
+                $streaks['pause_marked'] = [];
+            }
             
-            echo json_encode(array("streaks" => $streaks, "milestones" => $milestones, "restore_streak_saved" => 0, "pauseLog" => $pauseLogData));
+            // Check if user is currently paused
+            $isCurrentlyPaused = 0;
+            if (!empty($pauseLogData)) {
+                $latestPauseEntry = $pauseLogData[0]; // Most recent entry
+                if (isset($latestPauseEntry['paused_at']) && !isset($latestPauseEntry['resumed_at'])) {
+                    // User is currently paused (has paused_at but no resumed_at)
+                    $isCurrentlyPaused = 1;
+                }
+            }
+            
+            echo json_encode(array(
+                "streaks" => $streaks, 
+                "milestones" => $milestones, 
+                "restore_streak_saved" => 0, 
+                "pauseLog" => $pauseLogData,
+                "is_paused" => $isCurrentlyPaused
+            ));
             
             exit;
 
@@ -609,7 +683,9 @@
                 "userId" => $_GET['userId'],
                 "name" => $_GET['name'],
                 "appname" => $_GET['appname'],
-                "lang" => $lang
+                "lang" => $lang,
+                "timezone" => $_GET['timezone'] ?? '',
+                "platform" => $_GET['platform'] ?? 'android'
             );
             // store user data
             $userTable = "https://$projectId.supabase.co/rest/v1/users";
@@ -657,10 +733,12 @@
             $baseUrlMilestones = "https://$projectId.supabase.co/rest/v1/milestones";
             $baseUrlUserMilestones = "https://$projectId.supabase.co/rest/v1/userMilestones";
             $usersEligibleForMilestoneTomorrowFunctionUrl = "https://$projectId.supabase.co/rest/v1/rpc/get_eligible_users_for_tomorrow_milestone";
-            $today = date('Y-m-d');
+            $notificationLogUrl = "https://$projectId.supabase.co/rest/v1/notificationLog";
+            $notificationTableUrl = "https://$projectId.supabase.co/rest/v1/notifications";
+            $today = $_GET['mock_date'] ?? date('Y-m-d');
             $usersToNotify = getUsersForStreakNotification($usersMissingStreakFunctionUrl, $userTableUrl, $streakLogTableUrl, $headers, $appname, $today);
             // echo json_encode($usersToNotify);exit;
-            sendFCMMessage($usersToNotify, $streakLogTableUrl, $baseUrlMilestones, $baseUrlUserMilestones, $today, $headers, $tomorrow_milestone = false);
+            sendFCMMessage($usersToNotify, $streakLogTableUrl, $baseUrlMilestones, $baseUrlUserMilestones, $today, $headers, $tomorrow_milestone = false, $notificationLogUrl, $notificationTableUrl);
 
         break;
         case "admin-send-notification-tomorrow-milestone-eligible-users":
@@ -672,11 +750,13 @@
             $baseUrlMilestones = "https://$projectId.supabase.co/rest/v1/milestones";
             $baseUrlUserMilestones = "https://$projectId.supabase.co/rest/v1/userMilestones";
             $usersEligibleForMilestoneTomorrowFunctionUrl = "https://$projectId.supabase.co/rest/v1/rpc/get_eligible_users_for_tomorrow_milestone";
+            $notificationLogUrl = "https://$projectId.supabase.co/rest/v1/notificationLog";
+            $notificationTableUrl = "https://$projectId.supabase.co/rest/v1/notifications";
             $mock_date = $_GET['mock_date'] ?? null; // Optional: mock date for testing
             $milestoneEligibleUsers = getUsersEligibleForMilestoneTomorrow($usersEligibleForMilestoneTomorrowFunctionUrl, $userTableUrl, $streakLogTableUrl, $baseUrlMilestones, $baseUrlUserMilestones, $headers, $appname, $mock_date);
             // echo json_encode($milestoneEligibleUsers);exit;
             // $today = date('Y-m-d');
-            sendFCMMessage($milestoneEligibleUsers, $streakLogTableUrl, $baseUrlMilestones, $baseUrlUserMilestones, $mock_date, $headers, $tomorrow_milestone = true);
+            sendFCMMessage($milestoneEligibleUsers, $streakLogTableUrl, $baseUrlMilestones, $baseUrlUserMilestones, $mock_date, $headers, $tomorrow_milestone = true, $notificationLogUrl, $notificationTableUrl);
         break;
         default:
             http_response_code(401);
@@ -1741,60 +1821,12 @@
         return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
     }
 
-    function sendFCMMessage($users, $streakLogTableUrl, $baseUrlMilestones, $baseUrlUserMilestones, $today, $headers, $tomorrow_milestone) {
-        if($tomorrow_milestone == true){
-            foreach ($users as $user) {
-                $appid = 'low.carb.recipes.diet';
-                $fcmToken = $user['fcmToken'];
-                $title = "The Final Page Beckons! 🪶";
-                // Extract first name only
-                $firstName = explode(' ', trim($user['name']))[0];
-                $subtitle = str_replace(['%name%', '%milestone_day%'], [$firstName, $user['milestone']['name']], "%name%, the %milestone_day% milestone is just around the corner! Get ready to unlock your reward. 🗝️");
-                break;
-            }
-        }
-        else{
-            foreach ($users as $user) {
-                $milestonesOfApps = getStreakSkuOfAMilestone($baseUrlMilestones, $headers, array("appname" => $user['appname']));
-                $streakSku = $milestonesOfApps[0]["streakSku"];
-                $appid = 'low.carb.recipes.diet';
-                $fcmToken = $user['fcmToken'];
-                $checkYesterdayStreakLogged = checkYesterdayStreakLoggedNotification($streakLogTableUrl, $headers, array('appname' => $user['appname'], 'userId' => $user['userId'], 'streakSku' => $streakSku), $today);
-                if ($checkYesterdayStreakLogged) {
-                    $count = (int)$checkYesterdayStreakLogged[0]['count'] + 1;
-                    $checkAnyMilestoneExist = checkAnyMilestoneExist($baseUrlMilestones, $headers, array('streakSku' => $streakSku, 'streakCount' => $count, 'appname' => $user['appname']));
-                    if ($checkAnyMilestoneExist) {
-                        $checkAnyMilestoneExistIsAchieved = checkAnyMilestoneExistIsAchieved($baseUrlUserMilestones, $headers, array('milestoneSku' => $checkAnyMilestoneExist[0]['sku'], 'appname' => $user['appname'], "userId" => $user['userId']));
-                        if($checkAnyMilestoneExistIsAchieved == false){
-                            // Milestone break notification
-    
-                            $title = "Knowledge Milestone Approaching! 🚀";
-                            // Extract first name only
-                            $firstName = explode(' ', trim($user['name']))[0];
-                            $subtitle = str_replace(['%name%', '%milestone_day%'], [$firstName, $checkAnyMilestoneExist[0]['name']], "%name%, %milestone_day% summaries await! One last push to unlock your next reading milestone 💪");
-                        }
-                    }
-                    else{
-                        // Streak break notification
-    
-                        $title = "Your streak have been ended";
-                        // Extract first name only
-                        $firstName = explode(' ', trim($user['name']))[0];
-                        $subtitle = str_replace(['%name%', '%streak_day%'], [$firstName, $count], "%name%, your mind craves those 15 minutes! Don't break your %streak_day%-day reading habit now 🧠");
-                    }
-                }
-                else{
-                    $title = "Your streak have been ended";
-                    $subtitle = "kjn";
-                }
-                break;
-            }
-        }
-        // echo json_encode($users);
-        // exit;
-        
-        // echo $title . '<br>' . $subtitle;
-        // exit;
+    function sendFCMMessage($users, $streakLogTableUrl, $baseUrlMilestones, $baseUrlUserMilestones, $today, $headers, $tomorrow_milestone, $notificationLogUrl, $notificationTableUrl) {
+        echo json_encode($users);
+        exit;
+        // echo $today;
+
+
         $video_series_1_full_apps = array("african.braids.hairstyle", "com.rstream.beautyvideos", "beauty.skin.care.app", "com.rstream.booksummaries", "com.rstream.calmingmusic", "draw.cartoon.characters", "com.recipes.cookingvideos", "com.rstream.crafts", "com.rstream.crockpotrecipes", "com.rstream.dailywellness", "com.rstream.beautycare", "learn.drawing.tattoos", "easyworkout.workoutforwomen.homegym.beginnerexercise", "com.makeup.eye", "glowing.skin.face.yoga", "girls.pedicure.manicure", "com.rstream.exercisevideos", "com.rstream.haircare", "com.rstream.hairstyles", "short.hairstyles.steps", "rstream.scarf.hijabs", "home.diy.idea", "home.diy.ideas", "ketorecipes.vegetarian", "com.rstream.ketorecipes", "com.rstream.kidsvideos", "com.rstream.kidscrafts", "com.kids.learndrawing", "com.rstream.learndrawing", "learn.instruments.free", "learn.languages.free", "learn.magic.tricks", "com.rstream.piano", "com.rstream.lifehacks", "com.rstream.kidssongs", "draw.glow.mandalas", "guided.meditation.for.work", "com.rstream.mindfulness", "com.rstream.nailart", "com.rstream.nailartdesigns", "com.riatech.beautyvideos", "outfit.planner.ideas.fashion", "rstream.diy.papercrafts", "com.rstream.travel", "com.rstream.yogatraining");
         $video_series_2_full_apps = array("home.abs.workout.six.pack", "aerobics.workout.weightloss", "easy.airfryer.recipes", "learn.all.anime.drawing", "manga.comics.music.toon", "manga.anime.toon", "arm.workout.biceps.exercise", "asmr.videos.slicing.cutting.relaxing", "baby.led.weaning.cookbook", "bead.apps.beading.patterns", "leg.workout.buttocks.exercise", "tasty.cake.recipe.book", "dance.workouts.cardio.aerobic", "christmas.decorations.diy.decorating.decor", "christmas.food.recipes.cookies", "cocktails.mixed.drinks", "coffee.recipes.brew.hot.iced", "comics.toon.superheros.daily", "cottagecore.theme.farm.home", "dance.weightloss.workout", "dance.weight.loss.workout", "dessert.recipes.app.offline", "detox.app.diet.recipes", "dog.training.trainer.tricks", "draw.animals.stepbystep.tutorial", "draw.anime.girl.ideas", "dumbbell.home.workout", "embroidery.design.app.tutorial", "fitness.app.women.female.workout", "food.drawing.tutorial.stepbystep", "funny.animal.videos", "kitty.funny.cat.videos", "watch.memes.funny.videos", "gameplay.guides.reviews.tips", "live.stream.games.esports", "general.knowledge.education.quiz", "healthy.recipes.mealplans", "height.increase.home.exercise", "hiit.timers.workouts", "hiit.timer.workouts.women", "diy.crafts.free", "jewellery.maker.making.tutorial", "jump.rope.training", "kegel.exercises.trainer", "kegel.women.exercises.trainer", "kegel.trainer.exercise", "speak.learn.korean.apps", "easy.lazy.workout.bed.home", "learn.dance.move.step", "learn.draw.princess.step", "learn.drums.beginners", "learn.english.speaking.today", "speak.learn.french.apps", "learning.guitar.chords", "learn.japanese.language.speak", "learn.knitting.Crochet.step", "speak.spanish.learning.apps", "learn.swimming.lessons.app.learning", "love.learn.sex.app", "low.carb.weightloss.plan", "makeup.app.artist.tips.tutorial", "comics.manga.reviews.toon", "anxiety.relief.meditation", "app.guided.meditation.focus", "meditate.relax.sleep", "men.hairstyle.haircut", "muscle.booster.body.building.home.workout", "muscle.booster.workout.home.gym.abs", "nature.sounds.video.relax", "book.summaries.read.novel", "oddly.satisfying.videos.relax", "fitness.workout.plank.challenge.day30", "vegan.meal.planner.plants", "car.racing.videos.bike", "raw.food.diet.recipes", "diy.recycled.craft.ideas", "salad.recipes.weightloss", "summaries.self.help.books", "self.care.help.improvement", "minute7.workout.challenge", "healthy.smoothie.recipes.for.weight", "songs.music.videos.stream", "home.strength.training", "learn.ukulele.beginners", "weapons.drawing.tutorial.stepbystep", "relaxandsleep.sleepsounds.whitenoise", "workout.for.women.female.fitness", "yoga.weightloss.workout", "beginners.weight.loss.workout.women.yoga", "fit.zumba.dance.weightloss");
         $cooking_series_full_apps = array("calorie.calculator.counter.lose.weight", "air.fryer.oven.recipes", "alkaline.diet.recipes.weightLoss.ph", "all.free.recipes.cook", "com.riatech.americanRecipesNew", "com.riatech.arabicRecipesNew", "recipes.for.babies.food", "com.riatech.barbecueRecipesNew", "bodybuilding.diet.plan", "calorie.counter.to.lose.weight", "canning.preserving.recipes", "com.riatech.casserolerecipes", "com.riatech.chineseRecipesNew", "com.riatech.cocktailRecipesNew", "com.riatech.americanrecipes", "com.riatech.arabicrecipes", "com.riatech.brazilianrecipes", "com.riatech.breakfastrecipes", "com.riatech.cakerecipes", "com.riatech.chickenfree", "com.riatech.chineserecipes", "com.riatech.cocktailrecipes", "com.riatech.cookbook", "com.riatech.cookbookfrenchrecipes", "com.riatech.crockpotrecipes", "com.riatech.cubanrecipes", "com.riatech.dessertrecipes", "com.riatech.diabeticrecipes", "com.riatech.dietrecipes", "com.riatech.dinnerrecipes", "com.riatech.easyrecipes", "com.riatech.fitberry", "com.riatech.germanrecipes", "com.riatech.glutenfree", "com.riatech.grillrecipes", "com.riatech.indianrecipes", "com.riatech.Italianrecipes", "com.riatech.japaneserecipes", "com.riatech.koreanrecipes", "com.riatech.mexicanrecipes", "com.riatech.pakistanirecipes", "com.riatech.pizzarecipes", "com.riatech.portugueserecipes", "com.riatech.ricerecipes", "com.riatech.russianrecipes", "com.riatech.salads", "com.riatech.souprecipes", "com.riatech.spanishrecipe", "com.riatech.thairecipes", "com.riatech.vegetarianrecipes", "com.riatech.weightlossrecipes", "dash.diet.meal.plan", "diabetes.apps.sugar.tracker.log", "com.riatech.dinnerRecipesNew", "drink.cocktail.bar.recipes", "riatech.cocktails.drinks", "quick.easyrecipes.mealplan", "easy.chickenrecipes.free", "easy.recipes.beginners", "easy.sandwich.recipes.bread", "diet.fertility.ovulation.pregnancy", "fit.recipes.healthy.food", "free.cooking.allrecipes", "my.fridge.ingredient.recipe.generator", "com.riatech.germanRecipesNew", "grill.sauce.recipes", "gut.health.app.diet.recipes", "healthy.food.recipes", "healthy.recipebook.lunch", "com.riatech.indianRecipesNew", "com.riatech.japaneseRecipesNew", "diet.breakfast.ketorecipes", "keto.weightloss.diet.plan", "slim.keto.diet.plan", "keto.vegetarian.diet.plan", "cookbook.recipes.for.kids", "com.riatech.koreanRecipesNew", "low.carb.recipes.diet", "recipes.low.fat.diet", "low.budget.recipes.app", "meal.planner.calorie.counter", "mediterranean.diet.weightloss", "mediterranean.diet.recipes", "metabolism.booster.diet", "com.riatech.mexicanRecipesNew", "fit.mom.losing.weight.pregnancy", "offline.tasty.recipe.pasta", "oven_recipes.cook.big", "paleo.diet.app", "plant.based.meal.recipes", "com.riatech.pork", "com.riatech.portugueseRecipesNew", "pregnancy.health.tips.nutrition.dietplan", "recipe.keeper.book.organizer", "recipes.chocolate.maker", "seafood.recipes.tasty.shrimp", "slow.cooker.recipes.app", "slow.cooker.recipes", "com.riatech.tastyfeed", "tasty.asian.recipes", "tasty.egg.recipes.offline", "com.riatech.thaiRecipesNew", "vegan.recipes.diet.plan", "com.riatech.veganrecipes", "weightloss.women.diet.lose_weight", "easy.cooking.recipes");
@@ -1813,107 +1845,278 @@
         $sarath_2_full_apps = array("plant.identifier.app.gardening", "new.year.resolution.wallpaper", "wildlife.wallpapers.backgrounds.animal");
         $sarath_3_full_apps = array("blood.pressure.tracker.bp.monitor");
         $sarath_4_full_apps = array("read.books.audio.summary");
-        
-        if (in_array($appid, $video_series_1_full_apps)) {
-            $projectId = 'content-apps';
-            $authToken = generateAccessToken(__DIR__ . '/service-accounts/content-apps-firebase-adminsdk-x2f49-e284d4f61e_9zkYCj9.json');
-            $API_ACCESS_KEY = 'AAAAWS9D6S0:APA91bHZVIolkpGpf0DWGtvGopZm19BHXlJ_lCtgeyGV8t7CxHMENgdjGNNHdtRAVAGFG5vl3OnsTM9WUFDwYQt_Iop_u8IIXYlj7tl3jHjWnIjSgvLhQioTRZU4N_bH1a4cFE8LsGEi';
-        }
-        if (in_array($appid, $video_series_2_full_apps)) {
-            $projectId = 'content-apps-2';
-            $authToken = generateAccessToken(__DIR__ . '/service-accounts/content-apps-2-firebase-adminsdk-m3fox-fd4c5cb469_bAdPKe0.json');
-            $API_ACCESS_KEY = 'AAAAjCEzAL8:APA91bHh84nJtqVgkyR0ZFyUUd9BbH-9BP5z8273ZjvciAmszxFQ4y4fpuchIx7CQAyZr5-A1BVFiOIyy3lb1Ld0gAeNY06jvIcCdn_vKLiSsdLRoUIFBE1blLQlcLdOh-jMt9bcZ-j2';
-        }
-        if (in_array($appid, $cooking_series_full_apps)) {
-            $projectId = 'cookbook-now-145';
-            $authToken = generateAccessToken(__DIR__ . '/service-accounts/cookbook-now-145-firebase-adminsdk-6hpb8-7b02f60c98_0rl14nT.json');
-            $API_ACCESS_KEY = 'AAAAAkO_Jxg:APA91bGu4kXBpD5Sw_MdHskgOi0IttWXjf9YJrmgBZn7ONVtPptJmB8IdEcRcAif1Q19SS7sTninuDh1xq2YBx9czXCzGvX-Yu7N4Di74LgOWTIQxlzsUCWq5va9F5yhbsOit0UpkN8V';
-        }
-        if (in_array($appid, $walking_series_full_apps)) {
-            $projectId = 'daily-quotes-1a4a9';
-            $authToken = generateAccessToken(__DIR__ . '/service-accounts/daily-quotes-1a4a9-firebase-adminsdk-7ty0l-fc3888c361_r2uOLfN.json');
-            $API_ACCESS_KEY = 'AAAAKNh3zfQ:APA91bFo8xcKi9jn1Oqh0Dtk6JxRZkkvbnB-IKdzBVq2YoJLzyQPyW0VIYpXtN1MMI1BONHmqVmONYQnWadW8VG-_vohTW04i40oqKmyd9JrjKfz-WP778FYzn5h_GxcD3TmnOmMoe61';
-        }
-        if (in_array($appid, $workout_series_full_apps)) {
-            $projectId = 'workout-ed0ae';
-            $authToken = generateAccessToken(__DIR__ . '/service-accounts/workout-ed0ae-firebase-adminsdk-ut76u-fd94a13f10_hmAOSvM.json');
-            $API_ACCESS_KEY = 'AAAADLOR9fE:APA91bGFSLL9qB6CYAiY8mrZmkfRva2UkPDmne_Eu3NQvfx5qpD84PDL--Srnzcd9lAmRnisk_Av6d1DQ1ChNKM7aODovVlY3XGj57j9ce__o0WgKp6inE-jPAFOd-38t0ybA4TBIsEC';
-        }
-        if (in_array($appid, $quit_smoking_series_full_apps)) {
-            $projectId = 'fir-d9861';
-            $authToken = generateAccessToken(__DIR__ . '/service-accounts/fir-d9861-firebase-adminsdk-nkaxk-8d888b6d50_ztiKEFY.json');
-            $API_ACCESS_KEY = 'AAAA2ghYcGY:APA91bFpnNK4CZcUNAVGkKqBvgcVstFUNdJPxUZhxNpo2tJJgQSK6w6cwv_jG7D1nIlsySjZ05OP3te8lQqIHUcMarfIDuiLP_ZLYzNg5vRceWpY3N1xKjDLgEKV__Fukpan5RaY8zo6';
-        }
-        if (in_array($appid, $simi_full_apps)) {
-            $projectId = 'simi-shell';
-            $authToken = generateAccessToken(__DIR__ . '/service-accounts/simi-shell-firebase-adminsdk-7oobc-215579245e_oPiVw3V.json');
-            $API_ACCESS_KEY = 'AAAAGegQNNs:APA91bFI3tPe8BXWGsP2yWO8T-9L_muyg4Vt_7Zn5ruKl72JORVBJj505t1VIMTKZp7dqf4ib9tWxvZlgfPIXUoJGKrKKcsrRrp9n3SzMsR2SIP_UTnc8-hs9Vo72HjvTsrEl1K93Vs5';
-        }
-        if (in_array($appid, $sarath_full_apps)) {
-            $projectId = 'walking-tracker-pedometer';
-            $authToken = generateAccessToken(__DIR__ . '/service-accounts/walking-tracker-pedometer-firebase-adminsdk-ggkr6-6cdbc64f58_V0GGKhZ.json');
-            $API_ACCESS_KEY = 'AAAAMwdxH34:APA91bEpdS0bMI-8qj5lACZBPMsNX-w7oanrqnQyJjwb2xVYqMrxhxbIAxBW31PU8tMFrnXw7SOkezdbIXYdgMPfBobIDGuxOuJf9mGRLcEluK4-tx8Qee42O8AJSPSxy0o0g7WQ-APA';
-        }
-        if (in_array($appid, $sarath_2_full_apps)) {
-            $projectId = 'test-7e604';
-            $authToken = generateAccessToken(__DIR__ . '/service-accounts/test-7e604-firebase-adminsdk-ewkbe-9462a4883c_HQKBQ6J.json');
-            $API_ACCESS_KEY = 'AAAAzQq-U-4:APA91bGBsYYvBSIQT2Ru-KeXp2iTaiBsiWtDY_YwM7mngevDu0VkMZccy0R2N7cu2d0QdqT6NYIS3gBOWsyt72c4AWZ-PrzQcKzR3kIWPWj3HplLASC5vKOkWynJ8vYlSYAc9MFImuVt';
-        }
-        if (in_array($appid, $sarath_3_full_apps)) {
-            $projectId = 'health-tracker-series';
-            $authToken = generateAccessToken(__DIR__ . '/service-accounts/health-tracker-series-firebase-adminsdk-drw2m-2b863b4260_zXq480W.json');
-            $API_ACCESS_KEY = 'AAAA7dVJfTI:APA91bFMl4GMNuvLPWIMOtlLQpZStfI_2Y_QCx1y7bUPAcKMYE-cBGH8uq9kUY8kAEdr7CrleOlGiS-LUeipvYI20KIshvJPQMxAClydeliub-l6c30_hYBjKSlAXTvU2EGng1WQ9Cjt';
-        }
-        if (in_array($appid, $sarath_4_full_apps)) {
-            $projectId = 'read-book-series';
-            $authToken = generateAccessToken(__DIR__ . '/service-accounts/read-book-series-firebase-adminsdk-nym1x-3d8079bb72_JfRqbzP.json');
-            $API_ACCESS_KEY = 'AAAA1w_Ng8M:APA91bGN5y7jAHr-UA5m09aM2bCp1tJa8WFsfukx6_s7NL6BbNXsZIgo3z5EDFw1M5xme6wXXD_Hn57_BDIWmHECRwxfUibA0Y5WmqcPed2gABz6I8KZVVHaiwwn8V4z7DuzAGD2lO-2';
-        }
-        
-        $notification = array(
-            "title" => $title,
-            "body" => $subtitle,
-        );
 
-        $field = array(
-            "message" => array(
-                'notification' => $notification,
-                "android" => [
-                    "priority" => "high"
-                ],
-                "token" => $fcmToken,
-                "apns" => [
-                    "headers" => [
-                        "apns-priority" => "10",
-                        "apns-push-type" => "alert"
+        $authTokenContentApps1 = generateAccessToken(__DIR__ . '/service-accounts/content-apps-firebase-adminsdk-x2f49-e284d4f61e_9zkYCj9.json');
+        $authTokenContentApps2 = generateAccessToken(__DIR__ . '/service-accounts/content-apps-2-firebase-adminsdk-m3fox-fd4c5cb469_bAdPKe0.json');
+        $authTokenCooking = generateAccessToken(__DIR__ . '/service-accounts/cookbook-now-145-firebase-adminsdk-6hpb8-7b02f60c98_0rl14nT.json');
+        $authTokenDailyQuotes = generateAccessToken(__DIR__ . '/service-accounts/daily-quotes-1a4a9-firebase-adminsdk-7ty0l-fc3888c361_r2uOLfN.json');
+        $authTokenWorkout = generateAccessToken(__DIR__ . '/service-accounts/workout-ed0ae-firebase-adminsdk-ut76u-fd94a13f10_hmAOSvM.json');
+        $authTokenQuitSmoking = generateAccessToken(__DIR__ . '/service-accounts/fir-d9861-firebase-adminsdk-nkaxk-8d888b6d50_ztiKEFY.json');
+        $authTokenSuperShell1 = generateAccessToken(__DIR__ . '/service-accounts/riafy-apps-firebase-adminsdk-yl4wx-c696f42101_LUvUfqx.json');
+        $authTokenSuperShell2 = generateAccessToken(__DIR__ . '/service-accounts/super-shell-2-firebase-adminsdk-tl52j-86c8225e0f_VPefZwF.json');
+        $authTokenSuperShell3 = generateAccessToken(__DIR__ . '/service-accounts/super-shell-3-firebase-adminsdk-g691q-4409d411cc_4iPFJ0C.json');
+        $authTokenSuperShell4 = generateAccessToken(__DIR__ . '/service-accounts/super-shell-4-firebase-adminsdk-zu530-3bc1908823_w81Q4tX.json');
+        $authTokenSuperShell5 = generateAccessToken(__DIR__ . '/service-accounts/super-shell-5-firebase-adminsdk-llnye-e75819993e_aIaTsVj.json');
+        $authTokenSuperShell6 = generateAccessToken(__DIR__ . '/service-accounts/super-shell-6-firebase-adminsdk-6yvwz-04da96b590_d4LrOyk.json');
+        $authTokenSimiShell = generateAccessToken(__DIR__ . '/service-accounts/simi-shell-firebase-adminsdk-7oobc-215579245e_oPiVw3V.json');
+        $authTokenSarath1 = generateAccessToken(__DIR__ . '/service-accounts/walking-tracker-pedometer-firebase-adminsdk-ggkr6-6cdbc64f58_V0GGKhZ.json');
+        $authTokenSarath2 = generateAccessToken(__DIR__ . '/service-accounts/test-7e604-firebase-adminsdk-ewkbe-9462a4883c_HQKBQ6J.json');
+        $authTokenSarath3 = generateAccessToken(__DIR__ . '/service-accounts/health-tracker-series-firebase-adminsdk-drw2m-2b863b4260_zXq480W.json');
+        $authTokenSarath4 = generateAccessToken(__DIR__ . '/service-accounts/read-book-series-firebase-adminsdk-nym1x-3d8079bb72_JfRqbzP.json');
+        
+        $milestone_name = '';
+        $streak_count = '';
+        foreach ($users as $user) {
+            if($tomorrow_milestone == true){
+                // $appid = 'low.carb.recipes.diet';
+                $appid = $user['appname'];
+                $fcmToken = $user['fcmToken'];
+                $type = 'milestone_upcoming';
+                $lang = $user['lang'] ?? 'en';
+                
+                // Get notification from table
+                $notificationData = getNotificationFromTable($notificationTableUrl, $headers, $user['appname'], $lang, $type);
+                if ($notificationData) {
+                    $firstName = explode(' ', trim($user['name']))[0];
+                    $title = str_replace(['%user_name%', '%milestone_name%', '%streak_count%'], [$firstName, $user['milestone']['name'], ''], $notificationData['title']);
+                    $subtitle = str_replace(['%user_name%', '%milestone_name%', '%streak_count%'], [$firstName, $user['milestone']['name'], ''], $notificationData['subtitle']);
+                } else {
+                    // Fallback to hardcoded values
+                    $title = "The Final Page Beckons! 🪶";
+                    $firstName = explode(' ', trim($user['name']))[0];
+                    $subtitle = str_replace(['%user_name%', '%milestone_name%', '%streak_count%'], [$firstName, $user['milestone']['name'], ''], "%user_name%, the %milestone_name% milestone is just around the corner! Get ready to unlock your reward. 🗝️");
+                }
+            }
+            else{
+                // echo $user['appname'] . '<br>';
+                $milestonesOfApps = getStreakSkuOfAMilestone($baseUrlMilestones, $headers, array("appname" => $user['appname']));
+                $streakSku = $milestonesOfApps[0]["streakSku"];
+                // $appid = 'low.carb.recipes.diet';
+                $appid = $user['appname'];
+                $fcmToken = $user['fcmToken'];
+                $lang = $user['lang'] ?? 'en';
+                
+                $checkYesterdayStreakLogged = checkYesterdayStreakLoggedNotification($streakLogTableUrl, $headers, array('appname' => $user['appname'], 'userId' => $user['userId'], 'streakSku' => $streakSku), $today);
+                if ($checkYesterdayStreakLogged) {
+                    $count = (int)$checkYesterdayStreakLogged[0]['count'] + 1;
+                    $checkAnyMilestoneExist = checkAnyMilestoneExist($baseUrlMilestones, $headers, array('streakSku' => $streakSku, 'streakCount' => $count, 'appname' => $user['appname']));
+                    if ($checkAnyMilestoneExist) {
+                        $checkAnyMilestoneExistIsAchieved = checkAnyMilestoneExistIsAchieved($baseUrlUserMilestones, $headers, array('milestoneSku' => $checkAnyMilestoneExist[0]['sku'], 'appname' => $user['appname'], "userId" => $user['userId']));
+                        if($checkAnyMilestoneExistIsAchieved == false){
+                            // Milestone break notification
+                            $type = 'milestone_break';
+                            $notificationData = getNotificationFromTable($notificationTableUrl, $headers, $user['appname'], $lang, $type);
+                            if ($notificationData) {
+                                $firstName = explode(' ', trim($user['name']))[0];
+                                $title = str_replace(['%user_name%', '%milestone_name%', '%streak_count%'], [$firstName, $checkAnyMilestoneExist[0]['name'], $count], $notificationData['title']);
+                                $subtitle = str_replace(['%user_name%', '%milestone_name%', '%streak_count%'], [$firstName, $checkAnyMilestoneExist[0]['name'], $count], $notificationData['subtitle']);
+                            } else {
+                                // Fallback to hardcoded values
+                                $title = "Knowledge Milestone Approaching! 🚀";
+                                $firstName = explode(' ', trim($user['name']))[0];
+                                $subtitle = str_replace(['%user_name%', '%milestone_name%', '%streak_count%'], [$firstName, $checkAnyMilestoneExist[0]['name'], $count], "%user_name%, %milestone_name% summaries await! One last push to unlock your next reading milestone 💪");
+                            }
+                        }
+                        else{
+                            // Streak break notification
+                            $type = 'streak_break';
+                            $notificationData = getNotificationFromTable($notificationTableUrl, $headers, $user['appname'], $lang, $type);
+                            if ($notificationData) {
+                                $firstName = explode(' ', trim($user['name']))[0];
+                                $title = str_replace(['%user_name%', '%milestone_name%', '%streak_count%'], [$firstName, '', $count], $notificationData['title']);
+                                $subtitle = str_replace(['%user_name%', '%milestone_name%', '%streak_count%'], [$firstName, '', $count], $notificationData['subtitle']);
+                            } else {
+                                // Fallback to hardcoded values
+                                $title = "Your streak have been ended";
+                                $firstName = explode(' ', trim($user['name']))[0];
+                                $subtitle = str_replace(['%user_name%', '%milestone_name%', '%streak_count%'], [$firstName, '', $count], "%user_name%, your mind craves those 15 minutes! Don't break your %streak_count%-day reading habit now 🧠");
+                            }
+                        }
+                    }
+                    else{
+                        // Streak break notification
+                        $type = 'streak_break';
+                        $notificationData = getNotificationFromTable($notificationTableUrl, $headers, $user['appname'], $lang, $type);
+                        if ($notificationData) {
+                            $firstName = explode(' ', trim($user['name']))[0];
+                            $title = str_replace(['%user_name%', '%milestone_name%', '%streak_count%'], [$firstName, '', $count], $notificationData['title']);
+                            $subtitle = str_replace(['%user_name%', '%milestone_name%', '%streak_count%'], [$firstName, '', $count], $notificationData['subtitle']);
+                        } else {
+                            // Fallback to hardcoded values
+                            $title = "Your streak have been ended";
+                            $firstName = explode(' ', trim($user['name']))[0];
+                            $subtitle = str_replace(['%user_name%', '%milestone_name%', '%streak_count%'], [$firstName, '', $count], "%user_name%, your mind craves those 15 minutes! Don't break your %streak_count%-day reading habit now 🧠");
+                        }
+                    }
+                }
+                else{
+                    // Streak break notification
+                    $type = 'streak_break';
+                    $notificationData = getNotificationFromTable($notificationTableUrl, $headers, $user['appname'], $lang, $type);
+                    if ($notificationData) {
+                        $firstName = explode(' ', trim($user['name']))[0];
+                        $title = str_replace(['%user_name%', '%milestone_name%', '%streak_count%'], [$firstName, '', 1], $notificationData['title']);
+                        $subtitle = str_replace(['%user_name%', '%milestone_name%', '%streak_count%'], [$firstName, '', 1], $notificationData['subtitle']);
+                    } else {
+                        // Fallback to hardcoded values
+                        $title = "Your streak have been ended";
+                        $subtitle = "Your streak have been ended";
+                    }
+                }
+            }
+
+            if (in_array($appid, $video_series_1_full_apps)) {
+                $projectId = 'content-apps';
+                $authToken = $authTokenContentApps1;
+            }
+                         if (in_array($appid, $video_series_2_full_apps)) {
+                 $projectId = 'content-apps-2';
+                 $authToken = $authTokenContentApps2;
+             }
+                         if (in_array($appid, $cooking_series_full_apps)) {
+                 $projectId = 'cookbook-now-145';
+                 $authToken = $authTokenCooking;
+             }
+                         if (in_array($appid, $walking_series_full_apps)) {
+                 $projectId = 'daily-quotes-1a4a9';
+                 $authToken = $authTokenDailyQuotes;
+             }
+            if (in_array($appid, $workout_series_full_apps)) {
+                $projectId = 'workout-ed0ae';
+                $authToken = $authTokenWorkout;
+            }
+            if (in_array($appid, $quit_smoking_series_full_apps)) {
+                $projectId = 'fir-d9861';
+                $authToken = $authTokenQuitSmoking;
+            }
+            if (in_array($appid, $simi_full_apps)) {
+                $projectId = 'simi-shell';
+                $authToken = $authTokenSimiShell;
+            }
+            if (in_array($appid, $sarath_full_apps)) {
+                $projectId = 'walking-tracker-pedometer';
+                $authToken = $authTokenSarath1;
+            }
+            if (in_array($appid, $sarath_2_full_apps)) {
+                $projectId = 'test-7e604';
+                $authToken = $authTokenSarath2;
+            }
+            if (in_array($appid, $sarath_3_full_apps)) {
+                $projectId = 'health-tracker-series';
+                $authToken = $authTokenSarath3;
+            }
+            if (in_array($appid, $sarath_4_full_apps)) {
+                $projectId = 'read-book-series';
+                $authToken = $authTokenSarath4;
+            }
+    
+            if (in_array($appid, $ios_shell_1_full_apps)) {
+                $projectIdIos = 'riafy-apps';
+                $authTokenIos = $authTokenSuperShell1;
+            }
+            if (in_array($appid, $ios_shell_2_full_apps)) {
+                $projectIdIos = 'super-shell-2';
+                $authTokenIos = $authTokenSuperShell2;
+            }
+            if (in_array($appid, $ios_shell_3_full_apps)) {
+                $projectIdIos = 'super-shell-3';
+                $authTokenIos = $authTokenSuperShell3;
+            }
+            if (in_array($appid, $ios_shell_4_full_apps)) {
+                $projectIdIos = 'super-shell-4';
+                $authTokenIos = $authTokenSuperShell4;
+            }
+            if (in_array($appid, $ios_shell_5_full_apps)) {
+                $projectIdIos = 'super-shell-5';
+                $authTokenIos = $authTokenSuperShell5;
+            }
+            if (in_array($appid, $ios_shell_6_full_apps)) {
+                $projectIdIos = 'super-shell-6';
+                $authTokenIos = $authTokenSuperShell6;
+            }
+
+            if($user['platform'] == 'ios'){
+                $authToken = $authTokenIos;
+                $projectId = $projectIdIos;
+            }
+            
+            $notification = array(
+                "title" => $title,
+                "body" => $subtitle,
+            );
+    
+            $field = array(
+                "message" => array(
+                    'notification' => $notification,
+                    "android" => [
+                        "priority" => "high"
                     ],
-                    "payload" => [
-                        "aps" => [
-                            "interruption-level" => "time-sensitive"
+                    "token" => $fcmToken,
+                    "apns" => [
+                        "headers" => [
+                            "apns-priority" => "10",
+                            "apns-push-type" => "alert"
+                        ],
+                        "payload" => [
+                            "aps" => [
+                                "interruption-level" => "time-sensitive"
+                            ]
                         ]
                     ]
-                ]
-            )
-        );
-        // echo json_encode($field);exit;
-        $url = "https://fcm.googleapis.com/v1/projects/$projectId/messages:send";
-        $header = [
-            "Authorization: Bearer $authToken",
-            "Content-Type: application/json"
-        ];
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($field));
-        $result = curl_exec($ch);
-        if ($result === false) {
-            throw new \Exception('cURL Error: ' . curl_error($ch));
+                )
+            );
+            // echo json_encode($field);exit;
+            $url = "https://fcm.googleapis.com/v1/projects/$projectId/messages:send";
+            $header = [
+                "Authorization: Bearer $authToken",
+                "Content-Type: application/json"
+            ];
+            
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $url);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($field));
+            $result = curl_exec($ch);
+            if ($result === false) {
+                throw new \Exception('cURL Error: ' . curl_error($ch));
+            }
+            curl_close($ch);
+            $response = json_decode($result, true);
+            
+            // Log notification to notificationLog table
+            $deliveryType = isset($response['error']) ? 'error' : 'success';
+            
+            $notificationLogData = array(
+                "appname" => $user['appname'],
+                "userId" => $user['userId'],
+                "fcmToken" => $user['fcmToken'],
+                "title" => $title,
+                "subtitle" => $subtitle,
+                "deliveryType" => $deliveryType,
+                "jsonDump" => $result
+            );
+            
+            // Use the same pattern as other table operations
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $notificationLogUrl);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($notificationLogData));
+            $logResult = curl_exec($ch);
+            curl_close($ch);
         }
-        curl_close($ch);
-        echo $result;
+        
+        // echo $type;
+        // echo '<br>';
+        // echo json_encode($users);
+        // exit;
+        
+        // echo $title . '<br>' . $subtitle;
+        // exit;
     }
 
     // Get users who need streak notifications (haven't marked streak today)
@@ -2116,6 +2319,8 @@
                         'appname' => $userAppname,
                         'name' => $user['name'] ?? '',
                         'fcmToken' => $user['fcmToken'] ?? '',
+                        'platform' => $user['platform'] ?? 'android',
+                        'timezone' => $user['timezone'] ?? '',
                         'currentStreakCount' => $currentStreakCount,
                         'nextStreakCount' => $nextStreakCount,
                         'todayMarked' => !empty($todayStreakLogged),
@@ -2171,5 +2376,41 @@
         $res = curl_exec($ch);
         curl_close($ch);
         return json_decode($res, true);
+    }
+
+    function storeNotificationData($url, $headers, $data) {
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+        $res = curl_exec($ch);
+        curl_close($ch);
+        return json_decode($res, true);
+    }
+
+    function getNotificationFromTable($url, $headers, $appname, $lang, $type) {
+        $queryUrl = "$url?appname=eq.$appname&lang=eq.$lang&type=eq.$type";
+        $queryUrl = str_replace(" ", "%20", $queryUrl);
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $queryUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        $response = curl_exec($ch);
+        curl_close($ch);
+        // echo $response;
+        // exit;
+    
+        $data = json_decode($response, true);
+        
+        // Return a random row from the matching results
+        if (!empty($data)) {
+            $randomIndex = array_rand($data);
+            return $data[$randomIndex];
+        }
+        
+        return false;
     }
 ?>
