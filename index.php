@@ -644,6 +644,10 @@
             $deleteAllStreakLogsAppUser = deleteAllStreakLogsAppUser($baseUrlStreakLogs, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId']));
             $baseUrlUserMilestones = "https://$projectId.supabase.co/rest/v1/userMilestones";
             $deleteAllMilestonesAppUser = deleteAllMilestonesAppUser($baseUrlUserMilestones, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId']));
+            $baseUrlUserStreakPause = "https://$projectId.supabase.co/rest/v1/streakPause";
+            $deleteAllStreakPauseAppUser = deleteAllStreakPause($baseUrlUserStreakPause, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId']));
+            $baseUrlUserStreakPauseLogs = "https://$projectId.supabase.co/rest/v1/streakPauseLog";
+            $deleteAllStreakPauseLogsAppUser = deleteAllStreakPauseLogs($baseUrlUserStreakPauseLogs, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId']));
             echo json_encode(array("status" => "success", "message" => "Streak log and achieved milestones deleted succesfully", "response" => $deleteAllStreakLogsAppUser));
         break;
         case "app-mark-mock-streak":
@@ -1573,6 +1577,54 @@
 
     // Delete all user milestones
     function deleteAllMilestonesAppUser($url, $headers, $filters){
+        foreach ($filters as $key => $value) {
+            if (is_array($value)) {
+                foreach ($value as $operator => $v) {
+                    $queryParts[] = "$key=" . $operator . "." . urlencode($v);
+                }
+            } else {
+                $queryParts[] = "$key=eq." . urlencode($value);
+            }
+        }
+        $queryUrl = "$url?" . implode('&', $queryParts);
+        $queryUrl = str_replace(" ", "%20", $queryUrl);
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $queryUrl);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "DELETE");
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        $res = curl_exec($ch);
+        curl_close($ch);
+        return $res;
+    }
+
+    // Delete all streak pause
+    function deleteAllStreakPause($url, $headers, $filters){
+        foreach ($filters as $key => $value) {
+            if (is_array($value)) {
+                foreach ($value as $operator => $v) {
+                    $queryParts[] = "$key=" . $operator . "." . urlencode($v);
+                }
+            } else {
+                $queryParts[] = "$key=eq." . urlencode($value);
+            }
+        }
+        $queryUrl = "$url?" . implode('&', $queryParts);
+        $queryUrl = str_replace(" ", "%20", $queryUrl);
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $queryUrl);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "DELETE");
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        $res = curl_exec($ch);
+        curl_close($ch);
+        return $res;
+    }
+
+    // Delete all streak pause logs
+    function deleteAllStreakPauseLogs($url, $headers, $filters){
         foreach ($filters as $key => $value) {
             if (is_array($value)) {
                 foreach ($value as $operator => $v) {
