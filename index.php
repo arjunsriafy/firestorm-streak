@@ -248,6 +248,14 @@
                         exit;
                     }
                 }
+                elseif(isset($getStreakData[0]['streakType']) && $getStreakData[0]['streakType'] == 'monthly'){
+                    $existsThisMonthStreak = getStreakLogDataThisMonth($baseUrl, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId'], 'streakSku' => $streakSku));
+                    if ($existsThisMonthStreak) {
+                        http_response_code(403);
+                        echo json_encode(array("status" => "error", "message" => "This streak is already marked this month"));
+                        exit;
+                    }
+                }
             }
             else{
                 http_response_code(403);
@@ -314,7 +322,47 @@
                     $count = getWeeklyStreakCountWithPauseLogic($baseUrl, $baseUrlPaused, $pauseLogUrl, $headers, $params);
                 }
             }
-            // echo $count;exit;
+            elseif ($streakType == 'monthly') {
+                // Auto-resume pause if logging a streak while paused
+                $baseUrlPaused = "https://$projectId.supabase.co/rest/v1/streakPause";
+                $pauseLogUrl = "https://$projectId.supabase.co/rest/v1/streakPauseLog";
+                
+                // Check if user is currently paused
+                $pauseData = checkPauseExist($baseUrlPaused, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId']));
+                if ($pauseData && !empty($pauseData) && $pauseData[0]['is_pause'] == "1") {
+                    // User is paused, auto-resume
+                    $pauseId = $pauseData[0]['id'];
+                    $triggered_at = date('c');
+                    
+                    // Update streakPause table
+                    updatePauseResumeStreak($baseUrlPaused, $headers, $pauseId, array("is_pause" => "0", "triggered_at" => $triggered_at));
+                    
+                    // Update streakPauseLog table
+                    $latestPauseLog = getLatestPauseLogWithoutResume($pauseLogUrl, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId']));
+                    if ($latestPauseLog) {
+                        $pauseLogId = $latestPauseLog[0]['id'];
+                        $updatePauseLogData = array(
+                            "resumed_at" => $triggered_at
+                        );
+                        updatePauseLog($pauseLogUrl, $headers, $pauseLogId, $updatePauseLogData);
+                    }
+                }
+                
+                $checkLastMonthStreakLogged = checkLastMonthStreakLogged($baseUrl, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId'], 'streakSku' => $streakSku));
+                if ($checkLastMonthStreakLogged) {
+                    $count = (int)$checkLastMonthStreakLogged[0]['count'] + 1;
+                }
+                else{
+                    // Check pause logic for monthly streak continuation
+                    $params = array(
+                        'appname' => $_GET['appname'],
+                        'userId' => $_GET['userId'],
+                        'streakSku' => $streakSku
+                    );
+                    $count = getMonthlyStreakCountWithPauseLogic($baseUrl, $baseUrlPaused, $pauseLogUrl, $headers, $params);
+                }
+            }
+            echo $count;exit;
             $payloadToInsert['count'] = $count;
             $new = logStreak($baseUrl, $headers, $payloadToInsert);
 
@@ -737,6 +785,14 @@
                         exit;
                     }
                 }
+                elseif(isset($getStreakData[0]['streakType']) && $getStreakData[0]['streakType'] == 'monthly'){
+                    $existsThisMonthStreak = getStreakLogDataThisMonthMock($baseUrl, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId'], 'streakSku' => $streakSku), $mock_date);
+                    if ($existsThisMonthStreak) {
+                        http_response_code(403);
+                        echo json_encode(array("status" => "error", "message" => "This streak is already marked this month"));
+                        exit;
+                    }
+                }
             }
             else{
                 http_response_code(403);
@@ -821,6 +877,56 @@
                     ));
                     
                     $count = getWeeklyStreakCountWithPauseLogic($baseUrl, $baseUrlPaused, $pauseLogUrl, $headers, $params, $lastStreakLog);
+                }
+            }
+            elseif ($streakType == 'monthly') {
+                // Auto-resume pause if logging a streak while paused
+                $baseUrlPaused = "https://$projectId.supabase.co/rest/v1/streakPause";
+                $pauseLogUrl = "https://$projectId.supabase.co/rest/v1/streakPauseLog";
+                
+                // Check if user is currently paused
+                $pauseData = checkPauseExist($baseUrlPaused, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId']));
+                if ($pauseData && !empty($pauseData) && $pauseData[0]['is_pause'] == "1") {
+                    // User is paused, auto-resume
+                    $pauseId = $pauseData[0]['id'];
+                    $triggered_at = $mock_date ? date('c', strtotime($mock_date)) : date('c');
+                    
+                    // Update streakPause table
+                    updatePauseResumeStreak($baseUrlPaused, $headers, $pauseId, array("is_pause" => "0", "triggered_at" => $triggered_at));
+                    
+                    // Update streakPauseLog table
+                    $latestPauseLog = getLatestPauseLogWithoutResume($pauseLogUrl, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId']));
+                    if ($latestPauseLog) {
+                        $pauseLogId = $latestPauseLog[0]['id'];
+                        $updatePauseLogData = array(
+                            "resumed_at" => $triggered_at
+                        );
+                        updatePauseLog($pauseLogUrl, $headers, $pauseLogId, $updatePauseLogData);
+                    }
+                }
+                
+                $checkLastMonthStreakLogged = checkLastMonthStreakLoggedMock($baseUrl, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId'], 'streakSku' => $streakSku), $mock_date);
+                if ($checkLastMonthStreakLogged) {
+                    $count = (int)$checkLastMonthStreakLogged[0]['count'] + 1;
+                }
+                else{
+                    // Check pause logic for monthly streak continuation (for mock data)
+                    $params = array(
+                        'appname' => $_GET['appname'],
+                        'userId' => $_GET['userId'],
+                        'streakSku' => $streakSku
+                    );
+                    
+                    // Get the last streak log before the mock date
+                    $lastStreakLog = getAllStreakLogsApp($baseUrl, $headers, array(
+                        'appname' => $_GET['appname'], 
+                        'userId' => $_GET['userId'], 
+                        'streakSku' => $streakSku,
+                        'order' => ['created_at' => 'desc'],
+                        'limit' => 1
+                    ));
+                    
+                    $count = getMonthlyStreakCountWithPauseLogic($baseUrl, $baseUrlPaused, $pauseLogUrl, $headers, $params, $lastStreakLog);
                 }
             }
             // echo $count;exit;
@@ -2845,6 +2951,7 @@
         ));
         
         if (empty($latestPauseLog)) {
+            // echo "Monthly pause: No pause log entries found\n";
             return false; // No pause log entries found
         }
         
@@ -2897,6 +3004,281 @@
             return true; // Continue streak
         } else {
             return false; // Reset streak - missed the resume week
+        }
+    }
+
+    // Monthly streak functions
+
+    // Get streak log data for current month
+    function getStreakLogDataThisMonth($url, $headers, $filters) {
+        $today = new DateTime();
+        $monthStart = new DateTime($today->format('Y-m-01'));
+        $monthEnd = new DateTime($today->format('Y-m-t'));
+        
+        $monthStartStr = $monthStart->format('Y-m-d') . 'T00:00:00';
+        $monthEndStr = $monthEnd->format('Y-m-d') . 'T23:59:59';
+        
+        foreach ($filters as $key => $value) {
+            if (is_array($value)) {
+                foreach ($value as $operator => $v) {
+                    $queryParts[] = "$key=" . $operator . "." . urlencode($v);
+                }
+            } else {
+                $queryParts[] = "$key=eq." . urlencode($value);
+            }
+        }
+        $queryUrl = "$url?" . implode('&', $queryParts) . "&created_at=gte.$monthStartStr&created_at=lt.$monthEndStr";
+        $queryUrl = str_replace(" ", "%20", $queryUrl);
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $queryUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        $response = curl_exec($ch);
+        curl_close($ch);
+    
+        $data = json_decode($response, true);
+        return !empty($data) ? $data : false;
+    }
+
+    // Get streak log data for current month - Mock version
+    function getStreakLogDataThisMonthMock($url, $headers, $filters, $mock_date) {
+        $mockDateTime = new DateTime($mock_date);
+        $monthStart = new DateTime($mockDateTime->format('Y-m-01'));
+        $monthEnd = new DateTime($mockDateTime->format('Y-m-t'));
+        
+        $monthStartStr = $monthStart->format('Y-m-d') . 'T00:00:00';
+        $monthEndStr = $monthEnd->format('Y-m-d') . 'T23:59:59';
+        
+        foreach ($filters as $key => $value) {
+            if (is_array($value)) {
+                foreach ($value as $operator => $v) {
+                    $queryParts[] = "$key=" . $operator . "." . urlencode($v);
+                }
+            } else {
+                $queryParts[] = "$key=eq." . urlencode($value);
+            }
+        }
+        $queryUrl = "$url?" . implode('&', $queryParts) . "&created_at=gte.$monthStartStr&created_at=lt.$monthEndStr";
+        $queryUrl = str_replace(" ", "%20", $queryUrl);
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $queryUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        $response = curl_exec($ch);
+        curl_close($ch);
+    
+        $data = json_decode($response, true);
+        return !empty($data) ? $data : false;
+    }
+
+    // Check if streak was logged in the previous month
+    function checkLastMonthStreakLogged($url, $headers, $filters) {
+        $today = new DateTime();
+        $lastMonth = clone $today;
+        $lastMonth->modify('-1 month');
+        
+        $lastMonthStart = new DateTime($lastMonth->format('Y-m-01'));
+        $lastMonthEnd = new DateTime($lastMonth->format('Y-m-t'));
+        
+        $lastMonthStartStr = $lastMonthStart->format('Y-m-d') . 'T00:00:00';
+        $lastMonthEndStr = $lastMonthEnd->format('Y-m-d') . 'T23:59:59';
+        
+        foreach ($filters as $key => $value) {
+            if (is_array($value)) {
+                foreach ($value as $operator => $v) {
+                    $queryParts[] = "$key=" . $operator . "." . urlencode($v);
+                }
+            } else {
+                $queryParts[] = "$key=eq." . urlencode($value);
+            }
+        }
+        $queryUrl = "$url?" . implode('&', $queryParts) . "&created_at=gte.$lastMonthStartStr&created_at=lt.$lastMonthEndStr";
+        $queryUrl = str_replace(" ", "%20", $queryUrl);
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $queryUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        $response = curl_exec($ch);
+        curl_close($ch);
+    
+        $data = json_decode($response, true);
+        return !empty($data) ? $data : false;
+    }
+
+    // Check if streak was logged in the previous month - Mock version
+    function checkLastMonthStreakLoggedMock($url, $headers, $filters, $mock_date) {
+        $mockDateTime = new DateTime($mock_date);
+        $lastMonth = clone $mockDateTime;
+        $lastMonth->modify('-1 month');
+        
+        $lastMonthStart = new DateTime($lastMonth->format('Y-m-01'));
+        $lastMonthEnd = new DateTime($lastMonth->format('Y-m-t'));
+        
+        $lastMonthStartStr = $lastMonthStart->format('Y-m-d') . 'T00:00:00';
+        $lastMonthEndStr = $lastMonthEnd->format('Y-m-d') . 'T23:59:59';
+        
+        foreach ($filters as $key => $value) {
+            if (is_array($value)) {
+                foreach ($value as $operator => $v) {
+                    $queryParts[] = "$key=" . $operator . "." . urlencode($v);
+                }
+            } else {
+                $queryParts[] = "$key=eq." . urlencode($value);
+            }
+        }
+        $queryUrl = "$url?" . implode('&', $queryParts) . "&created_at=gte.$lastMonthStartStr&created_at=lt.$lastMonthEndStr";
+        $queryUrl = str_replace(" ", "%20", $queryUrl);
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $queryUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        $response = curl_exec($ch);
+        curl_close($ch);
+    
+        $data = json_decode($response, true);
+        return !empty($data) ? $data : false;
+    }
+
+    // Get the appropriate monthly streak count considering pause logic
+    function getMonthlyStreakCountWithPauseLogic($baseUrl, $baseUrlPaused, $pauseLogUrl, $headers, $params, $lastStreakLog = null) {
+        $appname = $params['appname'];
+        $userId = $params['userId'];
+        $streakSku = $params['streakSku'];
+        
+        // If no last streak log provided, get it
+        if (!$lastStreakLog) {
+            $lastStreakLog = getAllStreakLogsApp($baseUrl, $headers, array(
+                'appname' => $appname, 
+                'userId' => $userId, 
+                'streakSku' => $streakSku,
+                'order' => ['created_at' => 'desc'],
+                'limit' => 1
+            ));
+        }
+        
+        if (empty($lastStreakLog)) {
+            return 1; // First streak
+        }
+        
+        $lastStreakData = $lastStreakLog[0];
+        $lastStreakDate = $lastStreakData['created_at'];
+        $lastStreakCount = (int)$lastStreakData['count'];
+        
+        // Check if pause was activated properly for monthly streaks
+        $pauseActivatedProperly = checkMonthlyPauseActivationForStreak($baseUrlPaused, $pauseLogUrl, $headers, $params, $lastStreakDate);
+        
+        // echo "Monthly streak debug:\n";
+        // echo "Last streak date: " . $lastStreakDate . "\n";
+        // echo "Last streak count: " . $lastStreakCount . "\n";
+        // echo "Pause activated properly: " . ($pauseActivatedProperly ? "true" : "false") . "\n";
+        
+        if ($pauseActivatedProperly) {
+            // Continue streak: last count + 1
+            return $lastStreakCount + 1;
+        } else {
+            // Reset streak: count = 1 (either no pause record or pause not activated properly)
+            return 1;
+        }
+    }
+
+    // Check if pause was activated properly for monthly streaks
+    function checkMonthlyPauseActivationForStreak($baseUrlPaused, $pauseLogUrl, $headers, $params, $lastStreakDate = null) {
+        $appname = $params['appname'];
+        $userId = $params['userId'];
+        
+        // If no last streak date provided, get it from the database
+        if (!$lastStreakDate) {
+            global $baseUrl;
+            $lastStreakLog = getAllStreakLogsApp($baseUrl, $headers, array(
+                'appname' => $appname, 
+                'userId' => $userId, 
+                'streakSku' => $params['streakSku'],
+                'order' => ['created_at' => 'desc'],
+                'limit' => 1
+            ));
+            
+            if (empty($lastStreakLog)) {
+                return false; // No previous streak found
+            }
+            
+            $lastStreakDate = $lastStreakLog[0]['created_at'];
+        }
+        
+        // Get the latest pause log entry
+        $latestPauseLog = getAllStreakLogsApp($pauseLogUrl, $headers, array(
+            'appname' => $appname,
+            'userId' => $userId,
+            'order' => ['created_at' => 'desc'],
+            'limit' => 1
+        ));
+        
+        if (empty($latestPauseLog)) {
+            // echo "Monthly pause: No pause log entries found\n";
+            return false; // No pause log entries found
+        }
+        
+        $pauseLogEntry = $latestPauseLog[0];
+        
+        // Check if pause was activated properly (before the expected next month)
+        $lastStreakDateTime = new DateTime($lastStreakDate);
+        $lastStreakMonth = $lastStreakDateTime->format('Y-m');
+        
+        // Calculate the expected next month (the month after the last streak)
+        $expectedNextMonth = clone $lastStreakDateTime;
+        $expectedNextMonth->modify('+1 month');
+        $expectedNextMonthStr = $expectedNextMonth->format('Y-m');
+        
+        // Get pause activation date
+        $pauseActivatedAt = new DateTime($pauseLogEntry['created_at']);
+        $pauseActivatedMonth = $pauseActivatedAt->format('Y-m');
+        
+        // Check if pause was activated in the same month as last streak or in the expected next month
+        $pauseActivatedInLastStreakMonth = ($pauseActivatedMonth === $lastStreakMonth);
+        $pauseActivatedInExpectedNextMonth = ($pauseActivatedMonth === $expectedNextMonthStr);
+        
+        // If pause was activated after the expected next month, it should reset the streak
+        if (!$pauseActivatedInLastStreakMonth && !$pauseActivatedInExpectedNextMonth) {
+            return false; // Reset streak - pause activated too late
+        }
+        
+        // If pause is still active (not resumed), auto-resume it and continue streak
+        if (!isset($pauseLogEntry['resumed_at'])) {
+            // echo "Monthly pause: Pause is still active, auto-resuming...\n";
+            // Auto-resume the pause
+            $pauseLogId = $pauseLogEntry['id'];
+            $triggered_at = isset($_GET['date']) ? date('c', strtotime($_GET['date'])) : date('c');
+            $updatePauseLogData = array(
+                "resumed_at" => $triggered_at
+            );
+            updatePauseLog($pauseLogUrl, $headers, $pauseLogId, $updatePauseLogData);
+            
+            // Also update the streakPause table
+            $pauseData = checkPauseExist($baseUrlPaused, $headers, array('appname' => $appname, 'userId' => $userId));
+            if ($pauseData && !empty($pauseData)) {
+                $id = $pauseData[0]['id'];
+                updatePauseResumeStreak($baseUrlPaused, $headers, $id, array("is_pause" => "0", "triggered_at" => $triggered_at));
+            }
+            
+            return true; // Continue streak - pause was active and we're resuming it
+        }
+        
+        // If pause was already resumed, check if we're logging in the same month as the resume
+        $resumedAt = new DateTime($pauseLogEntry['resumed_at']);
+        
+        // Get current logging date (either from GET parameter or current date)
+        $currentLogDate = isset($_GET['date']) ? date('Y-m', strtotime($_GET['date'])) : date('Y-m');
+        $resumeMonth = $resumedAt->format('Y-m');
+        
+        $loggingInResumeMonth = ($currentLogDate === $resumeMonth);
+        
+        if ($loggingInResumeMonth) {
+            return true; // Continue streak
+        } else {
+            return false; // Reset streak - missed the resume month
         }
     }
 ?>
