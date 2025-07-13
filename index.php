@@ -1510,21 +1510,6 @@
         $appname = $params['appname'];
         $userId = $params['userId'];
         
-        // Get pause data
-        $pauseData = checkPauseExist($baseUrlPaused, $headers, array('appname' => $appname, 'userId' => $userId));
-        
-        if (!$pauseData || empty($pauseData)) {
-            return false; // No pause record found
-        }
-        
-        $pauseRecord = $pauseData[0];
-        $isPaused = ($pauseRecord['is_pause'] == "1" || $pauseRecord['is_pause'] == 1);
-        $pauseTriggeredAt = $pauseRecord['triggered_at'];
-        
-        if (!$isPaused) {
-            return false; // Not currently paused
-        }
-        
         // If no last streak date provided, get it from the database
         if (!$lastStreakDate) {
             // Use the existing $baseUrl from the calling context
@@ -1544,40 +1529,68 @@
             $lastStreakDate = $lastStreakLog[0]['created_at'];
         }
         
-        // Convert dates to DateTime objects
+        // Convert last streak date to DateTime object
         $lastStreakDateTime = new DateTime($lastStreakDate);
-        $pauseTriggeredDateTime = new DateTime($pauseTriggeredAt);
         
         // Calculate the expected next streak date (next day after last streak)
         $expectedNextStreakDate = clone $lastStreakDateTime;
         $expectedNextStreakDate->modify('+1 day');
         
-        // Check if pause was activated on the same day as last streak or the very next day
-        $pauseTriggeredDate = $pauseTriggeredDateTime->format('Y-m-d');
+        // Get the latest pause log entry
+        $latestPauseLog = getAllStreakLogsApp($pauseLogUrl, $headers, array(
+            'appname' => $appname,
+            'userId' => $userId,
+            'order' => ['created_at' => 'desc'],
+            'limit' => 1
+        ));
+        
+        if (empty($latestPauseLog)) {
+            return false; // No pause log entries found
+        }
+        
+        $pauseLogEntry = $latestPauseLog[0];
+        $pausedAt = new DateTime($pauseLogEntry['paused_at']);
+        $pausedDate = $pausedAt->format('Y-m-d');
         $lastStreakDateOnly = $lastStreakDateTime->format('Y-m-d');
         $expectedNextStreakDateOnly = $expectedNextStreakDate->format('Y-m-d');
         
-        // Pause is valid if activated on the same day as last streak OR the very next day
-        $pauseIsValid = ($pauseTriggeredDate === $lastStreakDateOnly || $pauseTriggeredDate === $expectedNextStreakDateOnly);
-        
-        if ($pauseIsValid) {
-            // Resume the streak by setting is_pause to 0
-            $id = $pauseRecord['id'];
-            $triggered_at = isset($_GET['date']) ? $_GET['date'] : date('c');
-            updatePauseResumeStreak($baseUrlPaused, $headers, $id, array("is_pause" => "0", "triggered_at" => $triggered_at));
-            
-            // Log the resume activity in pause log
-            $latestPauseLog = getLatestPauseLogWithoutResume($pauseLogUrl, $headers, array('appname' => $appname, 'userId' => $userId));
-            if ($latestPauseLog) {
-                $pauseLogId = $latestPauseLog[0]['id'];
+        // Check if pause was activated on the same day as last streak OR the very next day
+        if ($pausedDate === $lastStreakDateOnly || $pausedDate === $expectedNextStreakDateOnly) {
+            // Check if this pause was already resumed
+            if (isset($pauseLogEntry['resumed_at'])) {
+                $resumedAt = new DateTime($pauseLogEntry['resumed_at']);
+                $resumedDate = $resumedAt->format('Y-m-d');
+                
+                // Get current logging date (either from GET parameter or current date)
+                $currentLogDate = isset($_GET['date']) ? date('Y-m-d', strtotime($_GET['date'])) : date('Y-m-d');
+                
+                // Streak can only continue if logging on the same day as resume
+                if ($resumedDate === $currentLogDate) {
+                    return true; // Continue streak
+                } else {
+                    return false; // Reset streak - missed the resume day
+                }
+            } else {
+                // Auto-resume the pause
+                $pauseLogId = $pauseLogEntry['id'];
+                $triggered_at = isset($_GET['date']) ? $_GET['date'] : date('c');
                 $updatePauseLogData = array(
                     "resumed_at" => $triggered_at
                 );
                 updatePauseLog($pauseLogUrl, $headers, $pauseLogId, $updatePauseLogData);
+                
+                // Also update the streakPause table
+                $pauseData = checkPauseExist($baseUrlPaused, $headers, array('appname' => $appname, 'userId' => $userId));
+                if ($pauseData && !empty($pauseData)) {
+                    $id = $pauseData[0]['id'];
+                    updatePauseResumeStreak($baseUrlPaused, $headers, $id, array("is_pause" => "0", "triggered_at" => $triggered_at));
+                }
+                
+                return true; // Continue streak - logging on resume day
             }
         }
         
-        return $pauseIsValid;
+        return false;
     }
 
     // Scenario 2: Check if pause was activated and last streak was logged after pause (new logic)
