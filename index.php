@@ -500,22 +500,50 @@
                 'userId' => $_GET['userId'],
                 'order' => ['created_at' => 'desc']
             ));
+            // echo json_encode($pauseLogData);exit;
             
             // Extract all dates from pause log entries
             $pauseDates = array_reduce($pauseLogData, function($carry, $pauseEntry) {
-                if (isset($pauseEntry['paused_at']) && isset($pauseEntry['resumed_at'])) {
+                if (isset($pauseEntry['paused_at'])) {
                     $pausedAt = new DateTime($pauseEntry['paused_at']);
-                    $resumedAt = new DateTime($pauseEntry['resumed_at']);
                     
-                    // Add all dates from paused_at to resumed_at (inclusive)
-                    $currentDate = clone $pausedAt;
-                    while ($currentDate <= $resumedAt) {
-                        $carry[] = $currentDate->format('Y-m-d');
-                        $currentDate->modify('+1 day');
+                    if (isset($pauseEntry['resumed_at']) && $pauseEntry['resumed_at'] !== null) {
+                        // Pause has been resumed - add all dates from paused_at to resumed_at (inclusive)
+                        $resumedAt = new DateTime($pauseEntry['resumed_at']);
+                        $currentDate = clone $pausedAt;
+                        while ($currentDate <= $resumedAt) {
+                            $carry[] = $currentDate->format('Y-m-d');
+                            $currentDate->modify('+1 day');
+                        }
+                    } else {
+                        // Pause is still active - add all dates from paused_at to today (inclusive)
+                        $today = new DateTime();
+                        $currentDate = clone $pausedAt;
+                        while ($currentDate <= $today) {
+                            $carry[] = $currentDate->format('Y-m-d');
+                            $currentDate->modify('+1 day');
+                        }
                     }
                 }
                 return $carry;
             }, array());
+            
+            // Remove dates from pause_marked that have streak logs (edge case: streak marked on resume date)
+            if (!empty($pauseDates) && !empty($streak_marked)) {
+                $streakMarkedDates = array_map(function($date) {
+                    return date('Y-m-d', strtotime($date));
+                }, $streak_marked);
+                
+                $pauseDates = array_filter($pauseDates, function($pauseDate) use ($streakMarkedDates) {
+                    return !in_array($pauseDate, $streakMarkedDates);
+                });
+            }
+            
+            // Remove duplicate dates from pause_marked
+            if (!empty($pauseDates)) {
+                $pauseDates = array_unique($pauseDates);
+                rsort($pauseDates); // Sort in descending order
+            }
             
             // Add pause dates to existing streak_marked dates
             if (!empty($pauseDates)) {
@@ -528,11 +556,13 @@
             
             // Check if user is currently paused
             $isCurrentlyPaused = 0;
+            $pauseStartDate = null;
             if (!empty($pauseLogData)) {
                 $latestPauseEntry = $pauseLogData[0]; // Most recent entry
                 if (isset($latestPauseEntry['paused_at']) && !isset($latestPauseEntry['resumed_at'])) {
                     // User is currently paused (has paused_at but no resumed_at)
                     $isCurrentlyPaused = 1;
+                    $pauseStartDate = $latestPauseEntry['paused_at'];
                 }
             }
             
@@ -541,7 +571,8 @@
                 "milestones" => $milestones, 
                 "restore_streak_saved" => 0, 
                 "pauseLog" => $pauseLogData,
-                "is_paused" => $isCurrentlyPaused
+                "is_paused" => $isCurrentlyPaused,
+                // "pause_start_date" => $pauseStartDate
             ));
             
             exit;
