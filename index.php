@@ -2199,6 +2199,9 @@
         $base64UrlSignature = base64UrlEncode($signature);
         $signedJWT = $unsignedJWT . '.' . $base64UrlSignature;
         $response = getOAuthToken($signedJWT);
+        if(isset($_GET['generateAccessToken'])){
+            echo json_encode($response);exit;
+        }
         return $response['access_token'];
     }
 
