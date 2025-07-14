@@ -2798,6 +2798,7 @@
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($field));
         $result = curl_exec($ch);
+        echo $response;
         if ($result === false) {
             throw new \Exception('cURL Error: ' . curl_error($ch));
         }
