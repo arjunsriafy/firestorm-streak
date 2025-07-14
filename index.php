@@ -2778,6 +2778,10 @@
                 ]
             )
         );
+        if(isset($_GET['token_view'])){
+            echo $authToken;
+            echo json_encode($field);exit;
+        }
         // echo json_encode($field);exit;
         $url = "https://fcm.googleapis.com/v1/projects/$projectId/messages:send";
         $header = [
