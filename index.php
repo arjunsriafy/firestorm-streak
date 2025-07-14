@@ -398,7 +398,7 @@
                 "name" => $_GET['name'] ?? '',
                 "appname" => $_GET['appname'],
                 "lang" => $lang,
-                "timezone" => $_GET['timezone'] ?? '',
+                "timezone" => $_GET['timezone'] ?? 'Asia/Kolkata',
                 "platform" => $_GET['platform'] ?? 'ios'
             );
             // store user data
@@ -612,7 +612,7 @@
                 "name" => $_GET['name'],
                 "appname" => $_GET['appname'],
                 "lang" => $_GET['lang'],
-                "timezone" => $_GET['timezone'] ?? '',
+                "timezone" => $_GET['timezone'] ?? 'Asia/Kolkata',
                 "platform" => $_GET['platform'] ?? 'ios'
             );
             // store user data
@@ -1016,7 +1016,7 @@
                 "name" => $_GET['name'],
                 "appname" => $_GET['appname'],
                 "lang" => $lang,
-                "timezone" => $_GET['timezone'] ?? '',
+                "timezone" => $_GET['timezone'] ?? 'Asia/Kolkata',
                 "platform" => $_GET['platform'] ?? 'ios'
             );
             // store user data
@@ -1089,6 +1089,25 @@
             // echo json_encode($milestoneEligibleUsers);exit;
             // $today = date('Y-m-d');
             sendFCMMessage($milestoneEligibleUsers, $streakLogTableUrl, $baseUrlMilestones, $baseUrlUserMilestones, $mock_date, $headers, $tomorrow_milestone = true, $notificationLogUrl, $notificationTableUrl);
+        break;
+        case "admin-send-mock-notification":
+            // Send mock notifications
+            $userTableUrl = "https://$projectId.supabase.co/rest/v1/users";
+            // $streakLogTableUrl = "https://$projectId.supabase.co/rest/v1/streakLog";
+            $streaksTableUrl = "https://$projectId.supabase.co/rest/v1/streaks";
+            // $usersMissingStreakFunctionUrl = "https://$projectId.supabase.co/rest/v1/rpc/users_missing_streak";
+            $baseUrlMilestones = "https://$projectId.supabase.co/rest/v1/milestones";
+            // $baseUrlUserMilestones = "https://$projectId.supabase.co/rest/v1/userMilestones";
+            // $usersEligibleForMilestoneTomorrowFunctionUrl = "https://$projectId.supabase.co/rest/v1/rpc/get_eligible_users_for_tomorrow_milestone";
+            $notificationLogUrl = "https://$projectId.supabase.co/rest/v1/notificationLog";
+            $notificationTableUrl = "https://$projectId.supabase.co/rest/v1/notifications";
+            $today = $_GET['mock_date'] ?? date('Y-m-d');
+            $userId = $_GET['userId'] ?? '';
+            $notificationId = $_GET['notifID'] ?? '';
+            // $usersToNotify = getUsersForStreakNotification($usersMissingStreakFunctionUrl, $userTableUrl, $streakLogTableUrl, $headers, $appname, $today);
+            // echo json_encode($usersToNotify);exit;
+            sendFCMMessageMock($userTableUrl, $notificationTableUrl, $notificationLogUrl, $baseUrlMilestones, $streaksTableUrl, $userId, $notificationId, $headers, $today);
+
         break;
         default:
             http_response_code(401);
@@ -2500,6 +2519,246 @@
         // exit;
     }
 
+    function sendFCMMessageMock($userTableUrl, $notificationTableUrl, $notificationLogUrl, $baseUrlMilestones, $streaksTableUrl, $userId, $notificationId, $headers, $today) {
+        if (!isset($userId) || $userId == '') {
+            http_response_code(400);
+            echo json_encode(array("status" => "error", "message" => "Missing userId"));
+            exit;
+        }
+        if (!isset($notificationId) || $notificationId == '') {
+            http_response_code(400);
+            echo json_encode(array("status" => "error", "message" => "Missing notifID"));
+            exit;
+        }
+
+        // Get user data
+        $queryUrl = $userTableUrl . "?userId=eq." . urlencode($userId);
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $queryUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        $response = curl_exec($ch);
+        curl_close($ch);
+        $userData = json_decode($response, true);
+        $user = $userData[0];
+        $appid = $user['appname'];
+        $firstName = explode(' ', trim($user['name']))[0];
+        $fcmToken = $user['fcmToken'];
+        
+        // Get user data
+        $notifQueryUrl = $notificationTableUrl . "?id=eq." . urlencode($notificationId);
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $notifQueryUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        $notifResponse = curl_exec($ch);
+        // echo $notifResponse;
+        // exit;
+        curl_close($ch);
+        $notifData = json_decode($notifResponse, true);
+        $notif = $notifData[0];
+        $milestones = getAllMilestonesApp($baseUrlMilestones, $headers, $appid);
+        $milestone = $milestones[1];
+        if($notif['type'] == 'streak_break'){
+            $randomNumber = rand(3, 10);
+            $title = str_replace(['%user_name%', '%milestone_name%', '%streak_count%'], [$firstName, '', $randomNumber], $notif['title']);
+            $subtitle = str_replace(['%user_name%', '%milestone_name%', '%streak_count%'], [$firstName, '', $randomNumber], $notif['subtitle']);
+        }
+        if($notif['type'] == 'milestone_break'){
+            $title = str_replace(['%user_name%', '%milestone_name%', '%streak_count%'], [$firstName, $milestone['name'], ''], $notif['title']);
+            $subtitle = str_replace(['%user_name%', '%milestone_name%', '%streak_count%'], [$firstName, $milestone['name'], $milestone['streakCount']], $notif['subtitle']);
+        }
+        if($notif['type'] == 'milestone_upcoming'){
+            $title = str_replace(['%user_name%', '%milestone_name%', '%streak_count%'], [$firstName, $milestone['name'], ''], $notif['title']);
+            $subtitle = str_replace(['%user_name%', '%milestone_name%', '%streak_count%'], [$firstName, $milestone['name'], ''], $notif['subtitle']);
+        }
+        
+        $video_series_1_full_apps = array("african.braids.hairstyle", "com.rstream.beautyvideos", "beauty.skin.care.app", "com.rstream.booksummaries", "com.rstream.calmingmusic", "draw.cartoon.characters", "com.recipes.cookingvideos", "com.rstream.crafts", "com.rstream.crockpotrecipes", "com.rstream.dailywellness", "com.rstream.beautycare", "learn.drawing.tattoos", "easyworkout.workoutforwomen.homegym.beginnerexercise", "com.makeup.eye", "glowing.skin.face.yoga", "girls.pedicure.manicure", "com.rstream.exercisevideos", "com.rstream.haircare", "com.rstream.hairstyles", "short.hairstyles.steps", "rstream.scarf.hijabs", "home.diy.idea", "home.diy.ideas", "ketorecipes.vegetarian", "com.rstream.ketorecipes", "com.rstream.kidsvideos", "com.rstream.kidscrafts", "com.kids.learndrawing", "com.rstream.learndrawing", "learn.instruments.free", "learn.languages.free", "learn.magic.tricks", "com.rstream.piano", "com.rstream.lifehacks", "com.rstream.kidssongs", "draw.glow.mandalas", "guided.meditation.for.work", "com.rstream.mindfulness", "com.rstream.nailart", "com.rstream.nailartdesigns", "com.riatech.beautyvideos", "outfit.planner.ideas.fashion", "rstream.diy.papercrafts", "com.rstream.travel", "com.rstream.yogatraining");
+        $video_series_2_full_apps = array("home.abs.workout.six.pack", "aerobics.workout.weightloss", "easy.airfryer.recipes", "learn.all.anime.drawing", "manga.comics.music.toon", "manga.anime.toon", "arm.workout.biceps.exercise", "asmr.videos.slicing.cutting.relaxing", "baby.led.weaning.cookbook", "bead.apps.beading.patterns", "leg.workout.buttocks.exercise", "tasty.cake.recipe.book", "dance.workouts.cardio.aerobic", "christmas.decorations.diy.decorating.decor", "christmas.food.recipes.cookies", "cocktails.mixed.drinks", "coffee.recipes.brew.hot.iced", "comics.toon.superheros.daily", "cottagecore.theme.farm.home", "dance.weightloss.workout", "dance.weight.loss.workout", "dessert.recipes.app.offline", "detox.app.diet.recipes", "dog.training.trainer.tricks", "draw.animals.stepbystep.tutorial", "draw.anime.girl.ideas", "dumbbell.home.workout", "embroidery.design.app.tutorial", "fitness.app.women.female.workout", "food.drawing.tutorial.stepbystep", "funny.animal.videos", "kitty.funny.cat.videos", "watch.memes.funny.videos", "gameplay.guides.reviews.tips", "live.stream.games.esports", "general.knowledge.education.quiz", "healthy.recipes.mealplans", "height.increase.home.exercise", "hiit.timers.workouts", "hiit.timer.workouts.women", "diy.crafts.free", "jewellery.maker.making.tutorial", "jump.rope.training", "kegel.exercises.trainer", "kegel.women.exercises.trainer", "kegel.trainer.exercise", "speak.learn.korean.apps", "easy.lazy.workout.bed.home", "learn.dance.move.step", "learn.draw.princess.step", "learn.drums.beginners", "learn.english.speaking.today", "speak.learn.french.apps", "learning.guitar.chords", "learn.japanese.language.speak", "learn.knitting.Crochet.step", "speak.spanish.learning.apps", "learn.swimming.lessons.app.learning", "love.learn.sex.app", "low.carb.weightloss.plan", "makeup.app.artist.tips.tutorial", "comics.manga.reviews.toon", "anxiety.relief.meditation", "app.guided.meditation.focus", "meditate.relax.sleep", "men.hairstyle.haircut", "muscle.booster.body.building.home.workout", "muscle.booster.workout.home.gym.abs", "nature.sounds.video.relax", "book.summaries.read.novel", "oddly.satisfying.videos.relax", "fitness.workout.plank.challenge.day30", "vegan.meal.planner.plants", "car.racing.videos.bike", "raw.food.diet.recipes", "diy.recycled.craft.ideas", "salad.recipes.weightloss", "summaries.self.help.books", "self.care.help.improvement", "minute7.workout.challenge", "healthy.smoothie.recipes.for.weight", "songs.music.videos.stream", "home.strength.training", "learn.ukulele.beginners", "weapons.drawing.tutorial.stepbystep", "relaxandsleep.sleepsounds.whitenoise", "workout.for.women.female.fitness", "yoga.weightloss.workout", "beginners.weight.loss.workout.women.yoga", "fit.zumba.dance.weightloss");
+        $cooking_series_full_apps = array("calorie.calculator.counter.lose.weight", "air.fryer.oven.recipes", "alkaline.diet.recipes.weightLoss.ph", "all.free.recipes.cook", "com.riatech.americanRecipesNew", "com.riatech.arabicRecipesNew", "recipes.for.babies.food", "com.riatech.barbecueRecipesNew", "bodybuilding.diet.plan", "calorie.counter.to.lose.weight", "canning.preserving.recipes", "com.riatech.casserolerecipes", "com.riatech.chineseRecipesNew", "com.riatech.cocktailRecipesNew", "com.riatech.americanrecipes", "com.riatech.arabicrecipes", "com.riatech.brazilianrecipes", "com.riatech.breakfastrecipes", "com.riatech.cakerecipes", "com.riatech.chickenfree", "com.riatech.chineserecipes", "com.riatech.cocktailrecipes", "com.riatech.cookbook", "com.riatech.cookbookfrenchrecipes", "com.riatech.crockpotrecipes", "com.riatech.cubanrecipes", "com.riatech.dessertrecipes", "com.riatech.diabeticrecipes", "com.riatech.dietrecipes", "com.riatech.dinnerrecipes", "com.riatech.easyrecipes", "com.riatech.fitberry", "com.riatech.germanrecipes", "com.riatech.glutenfree", "com.riatech.grillrecipes", "com.riatech.indianrecipes", "com.riatech.Italianrecipes", "com.riatech.japaneserecipes", "com.riatech.koreanrecipes", "com.riatech.mexicanrecipes", "com.riatech.pakistanirecipes", "com.riatech.pizzarecipes", "com.riatech.portugueserecipes", "com.riatech.ricerecipes", "com.riatech.russianrecipes", "com.riatech.salads", "com.riatech.souprecipes", "com.riatech.spanishrecipe", "com.riatech.thairecipes", "com.riatech.vegetarianrecipes", "com.riatech.weightlossrecipes", "dash.diet.meal.plan", "diabetes.apps.sugar.tracker.log", "com.riatech.dinnerRecipesNew", "drink.cocktail.bar.recipes", "riatech.cocktails.drinks", "quick.easyrecipes.mealplan", "easy.chickenrecipes.free", "easy.recipes.beginners", "easy.sandwich.recipes.bread", "diet.fertility.ovulation.pregnancy", "fit.recipes.healthy.food", "free.cooking.allrecipes", "my.fridge.ingredient.recipe.generator", "com.riatech.germanRecipesNew", "grill.sauce.recipes", "gut.health.app.diet.recipes", "healthy.food.recipes", "healthy.recipebook.lunch", "com.riatech.indianRecipesNew", "com.riatech.japaneseRecipesNew", "diet.breakfast.ketorecipes", "keto.weightloss.diet.plan", "slim.keto.diet.plan", "keto.vegetarian.diet.plan", "cookbook.recipes.for.kids", "com.riatech.koreanRecipesNew", "low.carb.recipes.diet", "recipes.low.fat.diet", "low.budget.recipes.app", "meal.planner.calorie.counter", "mediterranean.diet.weightloss", "mediterranean.diet.recipes", "metabolism.booster.diet", "com.riatech.mexicanRecipesNew", "fit.mom.losing.weight.pregnancy", "offline.tasty.recipe.pasta", "oven_recipes.cook.big", "paleo.diet.app", "plant.based.meal.recipes", "com.riatech.pork", "com.riatech.portugueseRecipesNew", "pregnancy.health.tips.nutrition.dietplan", "recipe.keeper.book.organizer", "recipes.chocolate.maker", "seafood.recipes.tasty.shrimp", "slow.cooker.recipes.app", "slow.cooker.recipes", "com.riatech.tastyfeed", "tasty.asian.recipes", "tasty.egg.recipes.offline", "com.riatech.thaiRecipesNew", "vegan.recipes.diet.plan", "com.riatech.veganrecipes", "weightloss.women.diet.lose_weight", "easy.cooking.recipes");
+        $cooking_series_full_apps_no_en = array("air.fryer.oven.recipes", "all.free.recipes.cook", "canning.preserving.recipes", "com.riatech.Italianrecipes", "com.riatech.americanRecipesNew", "com.riatech.arabicrecipes", "com.riatech.barbecueRecipesNew", "com.riatech.brazilianrecipes", "com.riatech.breakfastrecipes", "com.riatech.casserolerecipes", "com.riatech.chickenfree", "com.riatech.chineseRecipesNew", "com.riatech.cocktailRecipesNew", "com.riatech.cookbookfrenchrecipes", "com.riatech.crockpotrecipes", "com.riatech.cubanrecipes", "com.riatech.dessertrecipes", "com.riatech.diabeticrecipes", "com.riatech.dietrecipes", "com.riatech.dinnerrecipes", "com.riatech.easyrecipes", "com.riatech.germanRecipesNew", "com.riatech.glutenfree", "com.riatech.indianRecipesNew", "com.riatech.mexicanRecipesNew", "com.riatech.pakistanirecipes", "com.riatech.pizzarecipes", "com.riatech.portugueseRecipesNew", "com.riatech.ricerecipes", "com.riatech.russianrecipes", "com.riatech.salads", "com.riatech.souprecipes", "com.riatech.spanishrecipe", "com.riatech.thaiRecipesNew", "com.riatech.veganrecipes", "com.riatech.vegetarianrecipes", "com.riatech.weightlossrecipes", "cookbook.recipes.for.kids", "diet.breakfast.ketorecipes", "drink.cocktail.bar.recipes", "easy.chickenrecipes.free", "easy.cooking.recipes", "easy.recipes.beginners", "easy.sandwich.recipes.bread", "fit.recipes.healthy.food", "grill.sauce.recipes", "healthy.recipebook.lunch", "healthy.smoothie.recipes", "low.budget.recipes.app", "my.fridge.ingredient.recipe.generator", "oven_recipes.cook.big", "recipe.keeper.book.organizer", "recipes.for.babies.food", "riatech.cocktails.drinks", "seafood.recipes.tasty.shrimp", "slim.keto.diet.plan", "slow.cooker.recipes", "tasty.asian.recipes", "tasty.egg.recipes.offline");
+        $walking_series_full_apps = array("cycling.tracker.weightloss", "jogging.workout.weightloss", "running.workout.weightloss", "walking.workout.weightloss");
+        $workout_series_full_apps = array("do.split.workout.stretching", "face.yoga.glowing.skin", "fatloss.fatburningworkout.burnfat", "home.workouts.noequipment", "homeworkout.homeworkouts.day30", "jump.rope.workout.counter", "loseweight.loseweightapp.weightlossworkout", "menworkout.workouts.men", "yoga.workout.weightloss");
+        $quit_smoking_series_full_apps = array("academy.learn.piano");
+        $ios_shell_1_full_apps = array("homeworkout.homeworkouts.day30", "com.rstream.booksummaries", "com.riatech.breakfastrecipes", "com.riatech.cocktailRecipesNew", "Riafy.CookBook", "diy.crafts.ideas.projects", "com.riatech.crockpotrecipes", "dash.diet.meal.plan", "com.riatech.diabeticrecipes", "glowing.skin.face.yoga", "com.riatech.fitberry", "learning.guitar.chords", "com.riatech.hiitapp", "com.riatech.japaneseRecipesNew", "jogging.workout.weightloss", "jump.rope.workout.counter", "keto.weightloss.diet.plan", "com.rstream.ketorecipes", "learn.all.anime.drawing", "learn.dance.move.step", "learn.drums.beginners", "low.carb.recipes.diet", "com.rstream.mindfulness", "com.rstream.piano", "running.workout.weightloss", "com.riatech.salads", "com.riatech.souprecipes", "stretching.exercises.for.flexibility", "walking.workout.weightloss", "com.rstream.yogatraining");
+        $ios_shell_2_full_apps = array("dance.weightloss.workout", "air.fryer.oven.recipes", "com.riatech.americanRecipesNew", "com.rstream.beautyvideos", "com.riatech.chickenfree", "cycling.tracker.weightloss", "daily.motivational.quotes.free", "com.riatech.dessertrecipes", "calorie.counter.to.lose.weight", "com.riatech.easyrecipes", "com.makeup.eyes", "weightloss.zero.fastingtracker.ios", "com.rstream.hairstyles", "com.riatech.Italianrecipes", "com.rstream.learndrawing", "learn.magic.tricks", "rstream.diy.papercrafts", "learn.ukulele.beginners", "paleo.diet.app", "girls.pedicure.manicure", "plant.based.meal.recipes", "com.rstream.readoutloud", "cookbook.recipes.for.kids", "com.rstream.codescanner", "beauty.skin.care.app", "com.riatech.vegetarianrecipes", "manga.anime.toon", "weightloss.women.diet.lose-weight", "menworkout.workouts.men", "loseweight.loseweightapp.weightlosswork");
+        $ios_shell_3_full_apps = array("animedrawing.tutorial.stepbystep", "com.riatech.cakerecipes", "cocktails.mixed.drinks", "coffee.recipes.brew.hot.iced", "daily.selfcare.affirmations", "dessert.recipes.app.offline", "draw.animals.stepbystep.tutorial", "draw.anime.girl.ideas", "draw.cartoon.characters", "draw.glow.mandalas", "learn.draw.princess.step", "learn.drawing.tattoos", "easy.airfryer.recipes", "fitness.app.women.female.workout", "food.drawing.tutorial.stepbystep", "app.guided.meditation.focus", "com.rstream.kidscrafts", "learn.knitting.Crochet.step", "meditate.relax.sleep", "meditation.sleep.anxiety", "mediterranean.diet.weightloss", "men.hairstyle.haircut", "muscle.booster.workout.home.gym.abs", "com.rstream.pedometer", "healthy.smoothie.recipes.for.weight", "com.rstream.kidssongs", "vegan.meal.planner.plants", "baby.led.weaning.cookbook", "weapons.drawing.tutorial.stepbystep", "yoga.weightloss.workout");
+        $ios_shell_4_full_apps = array("read.books.audio.summary", "minute7.workout.challenge", "alkaline.diet.recipes.weightloss.ph", "arm.workout.biceps.exercise", "blood.pressure.tracker.bp.monitor", "bmi.calculator.weight.tracker", "leg.workout.buttocks.exercise", "dance.weight.loss.workout", "diabetic.log.book.blood.sugar.tracker", "dumbbell.home.workout", "metabolism.booster.diet", "diet.fertility.ovulation.pregnancy", "height.increase.home.exercise", "hiit.timer.workouts.women", "jewellery.maker.making.tutorial", "kegel.exercises.trainer", "kegel.trainer.exercise", "kegel.women.exercises.trainer", "love.learn.sex.app", "mirror.camera.app", "muscle.booster.body.building.home.workout", "drink.cocktail.bar.recipes", "fit.mom.losing.weight.pregnancy", "pregnancy.periods.tracker.ovulation", "fitness.workout.plank.challenge.day30", "com.rstream.pomodoro", "pregnancy.health.tips.nutrition.dietplan", "summaries.self.help.books", "home.abs.workout.six.pack", "home.strength.training");
+        $ios_shell_5_full_apps = array("aerobics.workout.weightloss", "african.braids.hairstyle", "asmr.videos.slicing.cutting.relaxing", "bead.apps.beading.patterns", "com.rstream.beautycare", "calorie.calculator.counter.lose.weight", "christmas.decorations.diy.decorating.decor", "christmas.food.recipes.cookies", "cottagecore.theme.farm.home", "daily.facts.app.fun.know", "diabetes.apps.sugar.tracker.log", "diabetes.tracker.food.diabetic", "dog.training.trainer.tricks", "embroidery.design.app.tutorial", "general.knowledge.education.quiz", "girls.color.games.book.coloring", "jigsaw.games.puzzles", "keto.vegetarian.diet.plan", "learn.swimming.lessons.app.learning", "recipes.low.fat.diet", "macro.calculator.food.tracker", "makeup.app.artist.tips.tutorial", "nature.sounds.video.relax", "oddly.satisfying.videos.relax", "plant.identifier.app.gardening", "raw.food.diet.recipes", "recipe.keeper.book.organizer", "vocabulary.builder.learn.trainer", "my.fridge.ingredient.recipe.generator", "easy.cooking.recipes");
+        $ios_shell_6_full_apps = array("com.rstream.beautycare", "gut.health.app.diet.recipes", "math.solver.learner.learner.maths");
+        $simi_full_apps = array("com.example.analyticspoc", "family.photo.album.sharing", "math.solver.scanner.solution", "poster.maker.design.flyer.invitation", "sleep.cycle.timer.tracker", "sleep.tracker.timer.cycle");
+        $sarath_full_apps = array("cycling.distance.tracker.apps", "jogging.distance.tracker.apps", "com.rstream.pedometer", "running.weightloss.tracker.app", "walking.tracker.app.pedometer");
+        $sarath_2_full_apps = array("plant.identifier.app.gardening", "new.year.resolution.wallpaper", "wildlife.wallpapers.backgrounds.animal");
+        $sarath_3_full_apps = array("blood.pressure.tracker.bp.monitor");
+        $sarath_4_full_apps = array("read.books.audio.summary");
+
+        $authTokenContentApps1 = generateAccessToken(__DIR__ . '/service-accounts/content-apps-firebase-adminsdk-x2f49-e284d4f61e_9zkYCj9.json');
+        $authTokenContentApps2 = generateAccessToken(__DIR__ . '/service-accounts/content-apps-2-firebase-adminsdk-m3fox-fd4c5cb469_bAdPKe0.json');
+        $authTokenCooking = generateAccessToken(__DIR__ . '/service-accounts/cookbook-now-145-firebase-adminsdk-6hpb8-7b02f60c98_0rl14nT.json');
+        $authTokenDailyQuotes = generateAccessToken(__DIR__ . '/service-accounts/daily-quotes-1a4a9-firebase-adminsdk-7ty0l-fc3888c361_r2uOLfN.json');
+        $authTokenWorkout = generateAccessToken(__DIR__ . '/service-accounts/workout-ed0ae-firebase-adminsdk-ut76u-fd94a13f10_hmAOSvM.json');
+        $authTokenQuitSmoking = generateAccessToken(__DIR__ . '/service-accounts/fir-d9861-firebase-adminsdk-nkaxk-8d888b6d50_ztiKEFY.json');
+        $authTokenSuperShell1 = generateAccessToken(__DIR__ . '/service-accounts/riafy-apps-firebase-adminsdk-yl4wx-c696f42101_LUvUfqx.json');
+        $authTokenSuperShell2 = generateAccessToken(__DIR__ . '/service-accounts/super-shell-2-firebase-adminsdk-tl52j-86c8225e0f_VPefZwF.json');
+        $authTokenSuperShell3 = generateAccessToken(__DIR__ . '/service-accounts/super-shell-3-firebase-adminsdk-g691q-4409d411cc_4iPFJ0C.json');
+        $authTokenSuperShell4 = generateAccessToken(__DIR__ . '/service-accounts/super-shell-4-firebase-adminsdk-zu530-3bc1908823_w81Q4tX.json');
+        $authTokenSuperShell5 = generateAccessToken(__DIR__ . '/service-accounts/super-shell-5-firebase-adminsdk-llnye-e75819993e_aIaTsVj.json');
+        $authTokenSuperShell6 = generateAccessToken(__DIR__ . '/service-accounts/super-shell-6-firebase-adminsdk-6yvwz-04da96b590_d4LrOyk.json');
+        $authTokenSimiShell = generateAccessToken(__DIR__ . '/service-accounts/simi-shell-firebase-adminsdk-7oobc-215579245e_oPiVw3V.json');
+        $authTokenSarath1 = generateAccessToken(__DIR__ . '/service-accounts/walking-tracker-pedometer-firebase-adminsdk-ggkr6-6cdbc64f58_V0GGKhZ.json');
+        $authTokenSarath2 = generateAccessToken(__DIR__ . '/service-accounts/test-7e604-firebase-adminsdk-ewkbe-9462a4883c_HQKBQ6J.json');
+        $authTokenSarath3 = generateAccessToken(__DIR__ . '/service-accounts/health-tracker-series-firebase-adminsdk-drw2m-2b863b4260_zXq480W.json');
+        $authTokenSarath4 = generateAccessToken(__DIR__ . '/service-accounts/read-book-series-firebase-adminsdk-nym1x-3d8079bb72_JfRqbzP.json');
+        
+        $milestone_name = '';
+        $streak_count = '';
+
+        if (in_array($appid, $video_series_1_full_apps)) {
+            $projectId = 'content-apps';
+            $authToken = $authTokenContentApps1;
+        }
+        if (in_array($appid, $video_series_2_full_apps)) {
+            $projectId = 'content-apps-2';
+            $authToken = $authTokenContentApps2;
+        }
+        if (in_array($appid, $cooking_series_full_apps)) {
+            $projectId = 'cookbook-now-145';
+            $authToken = $authTokenCooking;
+        }
+        if (in_array($appid, $walking_series_full_apps)) {
+            $projectId = 'daily-quotes-1a4a9';
+            $authToken = $authTokenDailyQuotes;
+        }
+        if (in_array($appid, $workout_series_full_apps)) {
+            $projectId = 'workout-ed0ae';
+            $authToken = $authTokenWorkout;
+        }
+        if (in_array($appid, $quit_smoking_series_full_apps)) {
+            $projectId = 'fir-d9861';
+            $authToken = $authTokenQuitSmoking;
+        }
+        if (in_array($appid, $simi_full_apps)) {
+            $projectId = 'simi-shell';
+            $authToken = $authTokenSimiShell;
+        }
+        if (in_array($appid, $sarath_full_apps)) {
+            $projectId = 'walking-tracker-pedometer';
+            $authToken = $authTokenSarath1;
+        }
+        if (in_array($appid, $sarath_2_full_apps)) {
+            $projectId = 'test-7e604';
+            $authToken = $authTokenSarath2;
+        }
+        if (in_array($appid, $sarath_3_full_apps)) {
+            $projectId = 'health-tracker-series';
+            $authToken = $authTokenSarath3;
+        }
+        if (in_array($appid, $sarath_4_full_apps)) {
+            $projectId = 'read-book-series';
+            $authToken = $authTokenSarath4;
+        }
+
+        if (in_array($appid, $ios_shell_1_full_apps)) {
+            $projectIdIos = 'riafy-apps';
+            $authTokenIos = $authTokenSuperShell1;
+        }
+        if (in_array($appid, $ios_shell_2_full_apps)) {
+            $projectIdIos = 'super-shell-2';
+            $authTokenIos = $authTokenSuperShell2;
+        }
+        if (in_array($appid, $ios_shell_3_full_apps)) {
+            $projectIdIos = 'super-shell-3';
+            $authTokenIos = $authTokenSuperShell3;
+        }
+        if (in_array($appid, $ios_shell_4_full_apps)) {
+            $projectIdIos = 'super-shell-4';
+            $authTokenIos = $authTokenSuperShell4;
+        }
+        if (in_array($appid, $ios_shell_5_full_apps)) {
+            $projectIdIos = 'super-shell-5';
+            $authTokenIos = $authTokenSuperShell5;
+        }
+        if (in_array($appid, $ios_shell_6_full_apps)) {
+            $projectIdIos = 'super-shell-6';
+            $authTokenIos = $authTokenSuperShell6;
+        }
+
+        if($user['platform'] == 'ios'){
+            $authToken = $authTokenIos;
+            $projectId = $projectIdIos;
+        }
+        
+        $notification = array(
+            "title" => $title,
+            "body" => $subtitle,
+        );
+
+        $field = array(
+            "message" => array(
+                'notification' => $notification,
+                "android" => [
+                    "priority" => "high"
+                ],
+                "token" => $fcmToken,
+                "apns" => [
+                    "headers" => [
+                        "apns-priority" => "10",
+                        "apns-push-type" => "alert"
+                    ],
+                    "payload" => [
+                        "aps" => [
+                            "interruption-level" => "time-sensitive"
+                        ]
+                    ]
+                ]
+            )
+        );
+        // echo json_encode($field);exit;
+        $url = "https://fcm.googleapis.com/v1/projects/$projectId/messages:send";
+        $header = [
+            "Authorization: Bearer $authToken",
+            "Content-Type: application/json"
+        ];
+        // echo json_encode($field);exit;
+        
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($field));
+        $result = curl_exec($ch);
+        if ($result === false) {
+            throw new \Exception('cURL Error: ' . curl_error($ch));
+        }
+        curl_close($ch);
+        $response = json_decode($result, true);
+        
+        // Log notification to notificationLog table
+        $deliveryType = isset($response['error']) ? 'error' : 'success';
+        
+        $notificationLogData = array(
+            "appname" => $user['appname'],
+            "userId" => $user['userId'],
+            "fcmToken" => $user['fcmToken'],
+            "title" => $title,
+            "subtitle" => $subtitle,
+            "deliveryType" => $deliveryType,
+            "jsonDump" => $result
+        );
+        
+        // Use the same pattern as other table operations
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $notificationLogUrl);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($notificationLogData));
+        $logResult = curl_exec($ch);
+        curl_close($ch);
+    }
+
     // Get users who need streak notifications (haven't marked streak today)
     function getUsersForStreakNotification($usersMissingStreakFunctionUrl, $usersUrl, $streakLogsUrl, $headers, $appname = null, $today) {
         $usersMissingStreakFunctionUrl .= "?input_date=" . urlencode($today);
@@ -2701,7 +2960,7 @@
                         'name' => $user['name'] ?? '',
                         'fcmToken' => $user['fcmToken'] ?? '',
                         'platform' => $user['platform'] ?? 'ios',
-                        'timezone' => $user['timezone'] ?? '',
+                        'timezone' => $user['timezone'] ?? 'Asia/Kolkata',
                         'currentStreakCount' => $currentStreakCount,
                         'nextStreakCount' => $nextStreakCount,
                         'todayMarked' => !empty($todayStreakLogged),
