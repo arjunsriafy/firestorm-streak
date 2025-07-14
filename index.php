@@ -3695,7 +3695,7 @@
 
     function getServiceAccountJson($base64Enc) {
         $serviceAccountJson = base64_decode($base64Enc);
-        $serviceAccountJsonDecoded = $serviceAccountJson;
+        $serviceAccountJsonDecoded = json_decode($serviceAccountJson, true);
         return $serviceAccountJsonDecoded;
     }
 
