@@ -654,6 +654,34 @@
                 return $carry;
             }, array());
             
+            $streakType = $streaks['streakType'];
+            // If weekly or monthly, reduce pause_marked to one date per week/month
+            if ($streakType == 'weekly' && !empty($pauseDates)) {
+                $byWeek = [];
+                foreach ($pauseDates as $date) {
+                    $dt = new DateTime($date);
+                    $weekStart = clone $dt;
+                    $weekStart->modify('-' . $dt->format('w') . ' days');
+                    $weekKey = $weekStart->format('Y-m-d');
+                    // Keep only the last date in the week
+                    $byWeek[$weekKey] = $date;
+                }
+                $pauseDates = array_values($byWeek);
+                rsort($pauseDates);
+            }
+            if ($streakType == 'monthly' && !empty($pauseDates)) {
+                $byMonth = [];
+                foreach ($pauseDates as $date) {
+                    $dt = new DateTime($date);
+                    $monthKey = $dt->format('Y-m');
+                    // Keep only the last date in the month
+                    $byMonth[$monthKey] = $date;
+                }
+                $pauseDates = array_values($byMonth);
+                rsort($pauseDates);
+            }
+            // echo json_encode($pauseDates);exit;
+            
             // Remove dates from pause_marked that have streak logs (edge case: streak marked on resume date)
             if (!empty($pauseDates) && !empty($streak_marked)) {
                 $streakMarkedDates = array_map(function($date) {
@@ -3315,4 +3343,37 @@
             return false; // Reset streak - missed the resume month
         }
     }
+
+    // Add these helper functions near the top or bottom of the file
+    function filterWeeklyLogs($logs) {
+        $result = [];
+        foreach ($logs as $log) {
+            $date = new DateTime($log['created_at']);
+            $weekStart = clone $date;
+            $weekStart->modify('-' . $date->format('w') . ' days');
+            $weekKey = $weekStart->format('Y-m-d');
+            // Keep only the last log for each week
+            $result[$weekKey] = $log;
+        }
+        return array_values($result);
+    }
+
+    function filterMonthlyLogs($logs) {
+        $result = [];
+        foreach ($logs as $log) {
+            $date = new DateTime($log['created_at']);
+            $monthKey = $date->format('Y-m');
+            // Keep only the last log for each month
+            $result[$monthKey] = $log;
+        }
+        return array_values($result);
+    }
+
+    // In the app-get-all-streaks switch case, after fetching $logs:
+    if ($streakType == 'weekly') {
+        $logs = filterWeeklyLogs($logs);
+    } elseif ($streakType == 'monthly') {
+        $logs = filterMonthlyLogs($logs);
+    }
+    // ...return $logs as usual...
 ?>
