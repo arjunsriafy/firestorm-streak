@@ -3368,12 +3368,4 @@
         }
         return array_values($result);
     }
-
-    // In the app-get-all-streaks switch case, after fetching $logs:
-    if ($streakType == 'weekly') {
-        $logs = filterWeeklyLogs($logs);
-    } elseif ($streakType == 'monthly') {
-        $logs = filterMonthlyLogs($logs);
-    }
-    // ...return $logs as usual...
 ?>
