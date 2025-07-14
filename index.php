@@ -366,6 +366,27 @@
                     $count = getMonthlyStreakCountWithPauseLogic($baseUrl, $baseUrlPaused, $pauseLogUrl, $headers, $params);
                 }
             }
+            elseif ($streakType == 'task') {
+                // Task streak: increment count by 1 for every log, no date or pause logic
+                $params = array(
+                    'appname' => $_GET['appname'],
+                    'userId' => $_GET['userId'],
+                    'streakSku' => $streakSku
+                );
+                // Get last streak log for this user and streakSku
+                $lastStreakLog = getAllStreakLogsApp($baseUrl, $headers, array(
+                    'appname' => $_GET['appname'],
+                    'userId' => $_GET['userId'],
+                    'streakSku' => $streakSku,
+                    'order' => ['created_at' => 'desc'],
+                    'limit' => 1
+                ));
+                if (!empty($lastStreakLog)) {
+                    $count = (int)$lastStreakLog[0]['count'] + 1;
+                } else {
+                    $count = 1;
+                }
+            }
             // echo $count;exit;
             $payloadToInsert['count'] = $count;
             $new = logStreak($baseUrl, $headers, $payloadToInsert);
@@ -378,7 +399,7 @@
                 "appname" => $_GET['appname'],
                 "lang" => $lang,
                 "timezone" => $_GET['timezone'] ?? '',
-                "platform" => $_GET['platform'] ?? 'android'
+                "platform" => $_GET['platform'] ?? 'ios'
             );
             // store user data
             $userTable = "https://$projectId.supabase.co/rest/v1/users";
@@ -592,7 +613,7 @@
                 "appname" => $_GET['appname'],
                 "lang" => $_GET['lang'],
                 "timezone" => $_GET['timezone'] ?? '',
-                "platform" => $_GET['platform'] ?? 'android'
+                "platform" => $_GET['platform'] ?? 'ios'
             );
             // store user data
             $userTable = "https://$projectId.supabase.co/rest/v1/users";
@@ -933,6 +954,28 @@
                     $count = getMonthlyStreakCountWithPauseLogic($baseUrl, $baseUrlPaused, $pauseLogUrl, $headers, $params, $lastStreakLog);
                 }
             }
+            elseif ($streakType == 'task') {
+                // Task streak: increment count by 1 for every log, no date or pause logic (mock)
+                $params = array(
+                    'appname' => $_GET['appname'],
+                    'userId' => $_GET['userId'],
+                    'streakSku' => $streakSku
+                );
+                // Get last streak log for this user and streakSku before mock_date
+                $lastStreakLog = getAllStreakLogsApp($baseUrl, $headers, array(
+                    'appname' => $_GET['appname'],
+                    'userId' => $_GET['userId'],
+                    'streakSku' => $streakSku,
+                    // 'created_at' => ['lte' => $mock_date],
+                    'order' => ['id' => 'desc'],
+                    'limit' => 1
+                ));
+                if (!empty($lastStreakLog)) {
+                    $count = (int)$lastStreakLog[0]['count'] + 1;
+                } else {
+                    $count = 1;
+                }
+            }
             // echo $count;exit;
             $payloadToInsert['count'] = $count;
             $payloadToInsert['created_at'] = $mock_date;
@@ -946,7 +989,7 @@
                 "appname" => $_GET['appname'],
                 "lang" => $lang,
                 "timezone" => $_GET['timezone'] ?? '',
-                "platform" => $_GET['platform'] ?? 'android'
+                "platform" => $_GET['platform'] ?? 'ios'
             );
             // store user data
             $userTable = "https://$projectId.supabase.co/rest/v1/users";
@@ -2629,7 +2672,7 @@
                         'appname' => $userAppname,
                         'name' => $user['name'] ?? '',
                         'fcmToken' => $user['fcmToken'] ?? '',
-                        'platform' => $user['platform'] ?? 'android',
+                        'platform' => $user['platform'] ?? 'ios',
                         'timezone' => $user['timezone'] ?? '',
                         'currentStreakCount' => $currentStreakCount,
                         'nextStreakCount' => $nextStreakCount,
