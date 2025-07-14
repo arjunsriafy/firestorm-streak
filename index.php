@@ -362,7 +362,7 @@
                     $count = getMonthlyStreakCountWithPauseLogic($baseUrl, $baseUrlPaused, $pauseLogUrl, $headers, $params);
                 }
             }
-            echo $count;exit;
+            // echo $count;exit;
             $payloadToInsert['count'] = $count;
             $new = logStreak($baseUrl, $headers, $payloadToInsert);
 
