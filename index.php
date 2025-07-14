@@ -2180,9 +2180,6 @@
     }
 
     function generateAccessToken($serviceAccount) {
-        if(isset($_GET['serviceAccount'])){
-            echo json_encode($serviceAccount);exit;
-        }
         // $serviceAccount = json_decode(file_get_contents($serviceAccountPath), true);
         $header = ['alg' => 'RS256', 'typ' => 'JWT'];
         $issuedAt = time();
@@ -2202,9 +2199,6 @@
         $base64UrlSignature = base64UrlEncode($signature);
         $signedJWT = $unsignedJWT . '.' . $base64UrlSignature;
         $response = getOAuthToken($signedJWT);
-        if(isset($_GET['generateAccessToken'])){
-            echo json_encode($response);exit;
-        }
         return $response['access_token'];
     }
 
@@ -2591,9 +2585,6 @@
         curl_close($ch);
         $userData = json_decode($response, true);
         $user = $userData[0];
-        if(isset($_GET['userView'])){
-            echo json_encode($user);exit;
-        }
         $appid = $user['appname'];
         $firstName = explode(' ', trim($user['name']))[0];
         $fcmToken = $user['fcmToken'];
@@ -2787,10 +2778,6 @@
                 ]
             )
         );
-        if(isset($_GET['token_view'])){
-            echo $authToken;
-            echo json_encode($field);exit;
-        }
         // echo json_encode($field);exit;
         $url = "https://fcm.googleapis.com/v1/projects/$projectId/messages:send";
         $header = [
@@ -3708,9 +3695,6 @@
     }
 
     function getServiceAccountJson($base64Enc) {
-        if(isset($_GET['getServiceAccountJson'])){
-            echo json_encode($base64Enc);exit;
-        }
         $serviceAccountJson = base64_decode($base64Enc);
         $serviceAccountJsonDecoded = json_decode($serviceAccountJson, true);
         return $serviceAccountJsonDecoded;
