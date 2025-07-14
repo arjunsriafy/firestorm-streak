@@ -3007,7 +3007,6 @@
         
         // If pause is still active (not resumed), auto-resume it and continue streak
         if (!isset($pauseLogEntry['resumed_at'])) {
-            // echo "Pause is still active, auto-resuming...\n";
             // Auto-resume the pause
             $pauseLogId = $pauseLogEntry['id'];
             $triggered_at = isset($_GET['date']) ? date('c', strtotime($_GET['date'])) : date('c');
@@ -3265,37 +3264,13 @@
         ));
         
         if (empty($latestPauseLog)) {
-            // echo "Monthly pause: No pause log entries found\n";
             return false; // No pause log entries found
         }
         
         $pauseLogEntry = $latestPauseLog[0];
         
-        // Check if pause was activated properly (before the expected next month)
-        $lastStreakDateTime = new DateTime($lastStreakDate);
-        $lastStreakMonth = $lastStreakDateTime->format('Y-m');
-        
-        // Calculate the expected next month (the month after the last streak)
-        $expectedNextMonth = clone $lastStreakDateTime;
-        $expectedNextMonth->modify('+1 month');
-        $expectedNextMonthStr = $expectedNextMonth->format('Y-m');
-        
-        // Get pause activation date
-        $pauseActivatedAt = new DateTime($pauseLogEntry['created_at']);
-        $pauseActivatedMonth = $pauseActivatedAt->format('Y-m');
-        
-        // Check if pause was activated in the same month as last streak or in the expected next month
-        $pauseActivatedInLastStreakMonth = ($pauseActivatedMonth === $lastStreakMonth);
-        $pauseActivatedInExpectedNextMonth = ($pauseActivatedMonth === $expectedNextMonthStr);
-        
-        // If pause was activated after the expected next month, it should reset the streak
-        if (!$pauseActivatedInLastStreakMonth && !$pauseActivatedInExpectedNextMonth) {
-            return false; // Reset streak - pause activated too late
-        }
-        
         // If pause is still active (not resumed), auto-resume it and continue streak
         if (!isset($pauseLogEntry['resumed_at'])) {
-            // echo "Monthly pause: Pause is still active, auto-resuming...\n";
             // Auto-resume the pause
             $pauseLogId = $pauseLogEntry['id'];
             $triggered_at = isset($_GET['date']) ? date('c', strtotime($_GET['date'])) : date('c');
@@ -3314,15 +3289,26 @@
             return true; // Continue streak - pause was active and we're resuming it
         }
         
+        // If pause was already resumed, check if it was activated in the correct window
+        $lastStreakDateTime = new DateTime($lastStreakDate);
+        $lastStreakMonth = $lastStreakDateTime->format('Y-m');
+        $expectedNextMonth = clone $lastStreakDateTime;
+        $expectedNextMonth->modify('+1 month');
+        $expectedNextMonthStr = $expectedNextMonth->format('Y-m');
+        // Use paused_at for pause activation logic
+        $pauseActivatedAt = new DateTime($pauseLogEntry['paused_at']);
+        $pauseActivatedMonth = $pauseActivatedAt->format('Y-m');
+        $pauseActivatedInLastStreakMonth = ($pauseActivatedMonth === $lastStreakMonth);
+        $pauseActivatedInExpectedNextMonth = ($pauseActivatedMonth === $expectedNextMonthStr);
+        if (!$pauseActivatedInLastStreakMonth && !$pauseActivatedInExpectedNextMonth) {
+            return false; // Reset streak - pause activated too late
+        }
+        
         // If pause was already resumed, check if we're logging in the same month as the resume
         $resumedAt = new DateTime($pauseLogEntry['resumed_at']);
-        
-        // Get current logging date (either from GET parameter or current date)
         $currentLogDate = isset($_GET['date']) ? date('Y-m', strtotime($_GET['date'])) : date('Y-m');
         $resumeMonth = $resumedAt->format('Y-m');
-        
         $loggingInResumeMonth = ($currentLogDate === $resumeMonth);
-        
         if ($loggingInResumeMonth) {
             return true; // Continue streak
         } else {
