@@ -2250,23 +2250,44 @@
         $sarath_3_full_apps = array("blood.pressure.tracker.bp.monitor");
         $sarath_4_full_apps = array("read.books.audio.summary");
 
-        $authTokenContentApps1 = generateAccessToken(__DIR__ . '/service-accounts/content-apps-firebase-adminsdk-x2f49-e284d4f61e_9zkYCj9.json');
-        $authTokenContentApps2 = generateAccessToken(__DIR__ . '/service-accounts/content-apps-2-firebase-adminsdk-m3fox-fd4c5cb469_bAdPKe0.json');
-        $authTokenCooking = generateAccessToken(__DIR__ . '/service-accounts/cookbook-now-145-firebase-adminsdk-6hpb8-7b02f60c98_0rl14nT.json');
-        $authTokenDailyQuotes = generateAccessToken(__DIR__ . '/service-accounts/daily-quotes-1a4a9-firebase-adminsdk-7ty0l-fc3888c361_r2uOLfN.json');
-        $authTokenWorkout = generateAccessToken(__DIR__ . '/service-accounts/workout-ed0ae-firebase-adminsdk-ut76u-fd94a13f10_hmAOSvM.json');
-        $authTokenQuitSmoking = generateAccessToken(__DIR__ . '/service-accounts/fir-d9861-firebase-adminsdk-nkaxk-8d888b6d50_ztiKEFY.json');
-        $authTokenSuperShell1 = generateAccessToken(__DIR__ . '/service-accounts/riafy-apps-firebase-adminsdk-yl4wx-c696f42101_LUvUfqx.json');
-        $authTokenSuperShell2 = generateAccessToken(__DIR__ . '/service-accounts/super-shell-2-firebase-adminsdk-tl52j-86c8225e0f_VPefZwF.json');
-        $authTokenSuperShell3 = generateAccessToken(__DIR__ . '/service-accounts/super-shell-3-firebase-adminsdk-g691q-4409d411cc_4iPFJ0C.json');
-        $authTokenSuperShell4 = generateAccessToken(__DIR__ . '/service-accounts/super-shell-4-firebase-adminsdk-zu530-3bc1908823_w81Q4tX.json');
-        $authTokenSuperShell5 = generateAccessToken(__DIR__ . '/service-accounts/super-shell-5-firebase-adminsdk-llnye-e75819993e_aIaTsVj.json');
-        $authTokenSuperShell6 = generateAccessToken(__DIR__ . '/service-accounts/super-shell-6-firebase-adminsdk-6yvwz-04da96b590_d4LrOyk.json');
-        $authTokenSimiShell = generateAccessToken(__DIR__ . '/service-accounts/simi-shell-firebase-adminsdk-7oobc-215579245e_oPiVw3V.json');
-        $authTokenSarath1 = generateAccessToken(__DIR__ . '/service-accounts/walking-tracker-pedometer-firebase-adminsdk-ggkr6-6cdbc64f58_V0GGKhZ.json');
-        $authTokenSarath2 = generateAccessToken(__DIR__ . '/service-accounts/test-7e604-firebase-adminsdk-ewkbe-9462a4883c_HQKBQ6J.json');
-        $authTokenSarath3 = generateAccessToken(__DIR__ . '/service-accounts/health-tracker-series-firebase-adminsdk-drw2m-2b863b4260_zXq480W.json');
-        $authTokenSarath4 = generateAccessToken(__DIR__ . '/service-accounts/read-book-series-firebase-adminsdk-nym1x-3d8079bb72_JfRqbzP.json');
+        if (strpos($_SERVER['HTTP_HOST'], 'localhost') !== false || isset($_GET['debug'])) {
+            $authTokenContentApps1 = generateAccessToken(fileGetContentLocal(__DIR__ . '/service-accounts/content-apps-firebase-adminsdk-x2f49-e284d4f61e_9zkYCj9.json'));
+            $authTokenContentApps2 = generateAccessToken(fileGetContentLocal(__DIR__ . '/service-accounts/content-apps-2-firebase-adminsdk-m3fox-fd4c5cb469_bAdPKe0.json'));
+            $authTokenCooking = generateAccessToken(fileGetContentLocal(__DIR__ . '/service-accounts/cookbook-now-145-firebase-adminsdk-6hpb8-7b02f60c98_0rl14nT.json'));
+            $authTokenDailyQuotes = generateAccessToken(fileGetContentLocal(__DIR__ . '/service-accounts/daily-quotes-1a4a9-firebase-adminsdk-7ty0l-fc3888c361_r2uOLfN.json'));
+            $authTokenWorkout = generateAccessToken(fileGetContentLocal(__DIR__ . '/service-accounts/workout-ed0ae-firebase-adminsdk-ut76u-fd94a13f10_hmAOSvM.json'));
+            $authTokenQuitSmoking = generateAccessToken(fileGetContentLocal(__DIR__ . '/service-accounts/fir-d9861-firebase-adminsdk-nkaxk-8d888b6d50_ztiKEFY.json'));
+            $authTokenSuperShell1 = generateAccessToken(fileGetContentLocal(__DIR__ . '/service-accounts/riafy-apps-firebase-adminsdk-yl4wx-c696f42101_LUvUfqx.json'));
+            $authTokenSuperShell2 = generateAccessToken(fileGetContentLocal(__DIR__ . '/service-accounts/super-shell-2-firebase-adminsdk-tl52j-86c8225e0f_VPefZwF.json'));
+            $authTokenSuperShell3 = generateAccessToken(fileGetContentLocal(__DIR__ . '/service-accounts/super-shell-3-firebase-adminsdk-g691q-4409d411cc_4iPFJ0C.json'));
+            $authTokenSuperShell4 = generateAccessToken(fileGetContentLocal(__DIR__ . '/service-accounts/super-shell-4-firebase-adminsdk-zu530-3bc1908823_w81Q4tX.json'));
+            $authTokenSuperShell5 = generateAccessToken(fileGetContentLocal(__DIR__ . '/service-accounts/super-shell-5-firebase-adminsdk-llnye-e75819993e_aIaTsVj.json'));
+            $authTokenSuperShell6 = generateAccessToken(fileGetContentLocal(__DIR__ . '/service-accounts/super-shell-6-firebase-adminsdk-6yvwz-04da96b590_d4LrOyk.json'));
+            $authTokenSimiShell = generateAccessToken(fileGetContentLocal(__DIR__ . '/service-accounts/simi-shell-firebase-adminsdk-7oobc-215579245e_oPiVw3V.json'));
+            $authTokenSarath1 = generateAccessToken(fileGetContentLocal(__DIR__ . '/service-accounts/walking-tracker-pedometer-firebase-adminsdk-ggkr6-6cdbc64f58_V0GGKhZ.json'));
+            $authTokenSarath2 = generateAccessToken(fileGetContentLocal(__DIR__ . '/service-accounts/test-7e604-firebase-adminsdk-ewkbe-9462a4883c_HQKBQ6J.json'));
+            $authTokenSarath3 = generateAccessToken(fileGetContentLocal(__DIR__ . '/service-accounts/health-tracker-series-firebase-adminsdk-drw2m-2b863b4260_zXq480W.json'));
+            $authTokenSarath4 = generateAccessToken(fileGetContentLocal(__DIR__ . '/service-accounts/read-book-series-firebase-adminsdk-nym1x-3d8079bb72_JfRqbzP.json'));
+        }
+        else {
+            $authTokenContentApps1 = generateAccessToken(getServiceAccountJson("CONTENT_APPS_FIREBASE_ADMINSDK_X2F49_E284D4F61E_9ZKYCJ9"));
+            $authTokenContentApps2 = generateAccessToken(getServiceAccountJson("CONTENT_APPS_2_FIREBASE_ADMINSDK_M3FOX_FD4C5CB469_BADPKE0"));
+            $authTokenCooking = generateAccessToken(getServiceAccountJson(getenv("COOKBOOK_NOW_145_FIREBASE_ADMINSDK_6HPB8_7B02F60C98_0RL14NT")));
+            $authTokenDailyQuotes = generateAccessToken(getServiceAccountJson("DAILY_QUOTES_1A4A9_FIREBASE_ADMINSDK_7TY0L_FC3888C361_R2UOLFN"));
+            $authTokenWorkout = generateAccessToken(getServiceAccountJson("WORKOUT_ED0AE_FIREBASE_ADMINSDK_UT76U_FD94A13F10_HMAOSVM"));
+            $authTokenQuitSmoking = generateAccessToken(getServiceAccountJson("FIR_D9861_FIREBASE_ADMINSDK_NKAXK_8D888B6D50_ZTIKEFY"));
+            $authTokenSuperShell1 = generateAccessToken(getServiceAccountJson("RIAFY_APPS_FIREBASE_ADMINSDK_YL4WX_C696F42101_LUVUFQX"));
+            $authTokenSuperShell2 = generateAccessToken(getServiceAccountJson("SUPER_SHELL_2_FIREBASE_ADMINSDK_TL52J_86C8225E0F_VPEFZWF"));
+            $authTokenSuperShell3 = generateAccessToken(getServiceAccountJson("SUPER_SHELL_3_FIREBASE_ADMINSDK_G691Q_4409D411CC_4IPFJ0C"));
+            $authTokenSuperShell4 = generateAccessToken(getServiceAccountJson("SUPER_SHELL_4_FIREBASE_ADMINSDK_ZU530_3BC1908823_W81Q4TX"));
+            $authTokenSuperShell5 = generateAccessToken(getServiceAccountJson("SUPER_SHELL_5_FIREBASE_ADMINSDK_LLNYE_E75819993E_AIATSVJ"));
+            $authTokenSuperShell6 = generateAccessToken(getServiceAccountJson("SUPER_SHELL_6_FIREBASE_ADMINSDK_6YVWZ_04DA96B590_D4LROYK"));
+            $authTokenSimiShell = generateAccessToken(getServiceAccountJson("SIMI_SHELL_FIREBASE_ADMINSDK_7OOBC_215579245E_OPIVW3V"));
+            $authTokenSarath1 = generateAccessToken(getServiceAccountJson("WALKING_TRACKER_PEDOMETER_FIREBASE_ADMINSDK_GGKR6_6CDBC64F58_V0GGKHZ"));
+            $authTokenSarath2 = generateAccessToken(getServiceAccountJson("TEST_7E604_FIREBASE_ADMINSDK_EWKBE_9462A4883C_HQKBQ6J"));
+            $authTokenSarath3 = generateAccessToken(getServiceAccountJson("HEALTH_TRACKER_SERIES_FIREBASE_ADMINSDK_DRW2M_2B863B4260_ZXQ480W"));
+            $authTokenSarath4 = generateAccessToken(getServiceAccountJson("READ_BOOK_SERIES_FIREBASE_ADMINSDK_NYM1X_3D8079BB72_JFRQBZP"));
+        }
         
         $milestone_name = '';
         $streak_count = '';
@@ -2284,11 +2305,15 @@
                     $firstName = explode(' ', trim($user['name']))[0];
                     $title = str_replace(['%user_name%', '%milestone_name%', '%streak_count%'], [$firstName, $user['milestone']['name'], ''], $notificationData['title']);
                     $subtitle = str_replace(['%user_name%', '%milestone_name%', '%streak_count%'], [$firstName, $user['milestone']['name'], ''], $notificationData['subtitle']);
+                    $title = str_replace('% , %', ' ', $title);
+                    $subtitle = str_replace('% , %', ' ', $subtitle);
                 } else {
                     // Fallback to hardcoded values
                     $title = "The Final Page Beckons! 🪶";
                     $firstName = explode(' ', trim($user['name']))[0];
                     $subtitle = str_replace(['%user_name%', '%milestone_name%', '%streak_count%'], [$firstName, $user['milestone']['name'], ''], "%user_name%, the %milestone_name% milestone is just around the corner! Get ready to unlock your reward. 🗝️");
+                    $title = str_replace('% , %', ' ', $title);
+                    $subtitle = str_replace('% , %', ' ', $subtitle);
                 }
             }
             else{
@@ -2314,11 +2339,15 @@
                                 $firstName = explode(' ', trim($user['name']))[0];
                                 $title = str_replace(['%user_name%', '%milestone_name%', '%streak_count%'], [$firstName, $checkAnyMilestoneExist[0]['name'], $count], $notificationData['title']);
                                 $subtitle = str_replace(['%user_name%', '%milestone_name%', '%streak_count%'], [$firstName, $checkAnyMilestoneExist[0]['name'], $count], $notificationData['subtitle']);
+                                $title = str_replace('% , %', ' ', $title);
+                                $subtitle = str_replace('% , %', ' ', $subtitle);
                             } else {
                                 // Fallback to hardcoded values
                                 $title = "Knowledge Milestone Approaching! 🚀";
                                 $firstName = explode(' ', trim($user['name']))[0];
                                 $subtitle = str_replace(['%user_name%', '%milestone_name%', '%streak_count%'], [$firstName, $checkAnyMilestoneExist[0]['name'], $count], "%user_name%, %milestone_name% summaries await! One last push to unlock your next reading milestone 💪");
+                                $title = str_replace('% , %', ' ', $title);
+                                $subtitle = str_replace('% , %', ' ', $subtitle);
                             }
                         }
                         else{
@@ -2329,11 +2358,15 @@
                                 $firstName = explode(' ', trim($user['name']))[0];
                                 $title = str_replace(['%user_name%', '%milestone_name%', '%streak_count%'], [$firstName, '', $count], $notificationData['title']);
                                 $subtitle = str_replace(['%user_name%', '%milestone_name%', '%streak_count%'], [$firstName, '', $count], $notificationData['subtitle']);
+                                $title = str_replace('% , %', ' ', $title);
+                                $subtitle = str_replace('% , %', ' ', $subtitle);
                             } else {
                                 // Fallback to hardcoded values
                                 $title = "Your streak have been ended";
                                 $firstName = explode(' ', trim($user['name']))[0];
                                 $subtitle = str_replace(['%user_name%', '%milestone_name%', '%streak_count%'], [$firstName, '', $count], "%user_name%, your mind craves those 15 minutes! Don't break your %streak_count%-day reading habit now 🧠");
+                                $title = str_replace('% , %', ' ', $title);
+                                $subtitle = str_replace('% , %', ' ', $subtitle);
                             }
                         }
                     }
@@ -2345,11 +2378,15 @@
                             $firstName = explode(' ', trim($user['name']))[0];
                             $title = str_replace(['%user_name%', '%milestone_name%', '%streak_count%'], [$firstName, '', $count], $notificationData['title']);
                             $subtitle = str_replace(['%user_name%', '%milestone_name%', '%streak_count%'], [$firstName, '', $count], $notificationData['subtitle']);
+                            $title = str_replace('% , %', ' ', $title);
+                            $subtitle = str_replace('% , %', ' ', $subtitle);
                         } else {
                             // Fallback to hardcoded values
                             $title = "Your streak have been ended";
                             $firstName = explode(' ', trim($user['name']))[0];
                             $subtitle = str_replace(['%user_name%', '%milestone_name%', '%streak_count%'], [$firstName, '', $count], "%user_name%, your mind craves those 15 minutes! Don't break your %streak_count%-day reading habit now 🧠");
+                            $title = str_replace('% , %', ' ', $title);
+                            $subtitle = str_replace('% , %', ' ', $subtitle);
                         }
                     }
                 }
@@ -2361,6 +2398,8 @@
                         $firstName = explode(' ', trim($user['name']))[0];
                         $title = str_replace(['%user_name%', '%milestone_name%', '%streak_count%'], [$firstName, '', 1], $notificationData['title']);
                         $subtitle = str_replace(['%user_name%', '%milestone_name%', '%streak_count%'], [$firstName, '', 1], $notificationData['subtitle']);
+                        $title = str_replace('% , %', ' ', $title);
+                        $subtitle = str_replace('% , %', ' ', $subtitle);
                     } else {
                         // Fallback to hardcoded values
                         $title = "Your streak have been ended";
@@ -2373,15 +2412,15 @@
                 $projectId = 'content-apps';
                 $authToken = $authTokenContentApps1;
             }
-                         if (in_array($appid, $video_series_2_full_apps)) {
+            if (in_array($appid, $video_series_2_full_apps)) {
                  $projectId = 'content-apps-2';
                  $authToken = $authTokenContentApps2;
              }
-                         if (in_array($appid, $cooking_series_full_apps)) {
+             if (in_array($appid, $cooking_series_full_apps)) {
                  $projectId = 'cookbook-now-145';
                  $authToken = $authTokenCooking;
              }
-                         if (in_array($appid, $walking_series_full_apps)) {
+             if (in_array($appid, $walking_series_full_apps)) {
                  $projectId = 'daily-quotes-1a4a9';
                  $authToken = $authTokenDailyQuotes;
              }
@@ -2578,7 +2617,6 @@
             $subtitle = str_replace(['%user_name%', '%milestone_name%', '%streak_count%'], [$firstName, $milestone['name'], ''], $notif['subtitle']);
         }
 
-        
         $video_series_1_full_apps = array("african.braids.hairstyle", "com.rstream.beautyvideos", "beauty.skin.care.app", "com.rstream.booksummaries", "com.rstream.calmingmusic", "draw.cartoon.characters", "com.recipes.cookingvideos", "com.rstream.crafts", "com.rstream.crockpotrecipes", "com.rstream.dailywellness", "com.rstream.beautycare", "learn.drawing.tattoos", "easyworkout.workoutforwomen.homegym.beginnerexercise", "com.makeup.eye", "glowing.skin.face.yoga", "girls.pedicure.manicure", "com.rstream.exercisevideos", "com.rstream.haircare", "com.rstream.hairstyles", "short.hairstyles.steps", "rstream.scarf.hijabs", "home.diy.idea", "home.diy.ideas", "ketorecipes.vegetarian", "com.rstream.ketorecipes", "com.rstream.kidsvideos", "com.rstream.kidscrafts", "com.kids.learndrawing", "com.rstream.learndrawing", "learn.instruments.free", "learn.languages.free", "learn.magic.tricks", "com.rstream.piano", "com.rstream.lifehacks", "com.rstream.kidssongs", "draw.glow.mandalas", "guided.meditation.for.work", "com.rstream.mindfulness", "com.rstream.nailart", "com.rstream.nailartdesigns", "com.riatech.beautyvideos", "outfit.planner.ideas.fashion", "rstream.diy.papercrafts", "com.rstream.travel", "com.rstream.yogatraining");
         $video_series_2_full_apps = array("home.abs.workout.six.pack", "aerobics.workout.weightloss", "easy.airfryer.recipes", "learn.all.anime.drawing", "manga.comics.music.toon", "manga.anime.toon", "arm.workout.biceps.exercise", "asmr.videos.slicing.cutting.relaxing", "baby.led.weaning.cookbook", "bead.apps.beading.patterns", "leg.workout.buttocks.exercise", "tasty.cake.recipe.book", "dance.workouts.cardio.aerobic", "christmas.decorations.diy.decorating.decor", "christmas.food.recipes.cookies", "cocktails.mixed.drinks", "coffee.recipes.brew.hot.iced", "comics.toon.superheros.daily", "cottagecore.theme.farm.home", "dance.weightloss.workout", "dance.weight.loss.workout", "dessert.recipes.app.offline", "detox.app.diet.recipes", "dog.training.trainer.tricks", "draw.animals.stepbystep.tutorial", "draw.anime.girl.ideas", "dumbbell.home.workout", "embroidery.design.app.tutorial", "fitness.app.women.female.workout", "food.drawing.tutorial.stepbystep", "funny.animal.videos", "kitty.funny.cat.videos", "watch.memes.funny.videos", "gameplay.guides.reviews.tips", "live.stream.games.esports", "general.knowledge.education.quiz", "healthy.recipes.mealplans", "height.increase.home.exercise", "hiit.timers.workouts", "hiit.timer.workouts.women", "diy.crafts.free", "jewellery.maker.making.tutorial", "jump.rope.training", "kegel.exercises.trainer", "kegel.women.exercises.trainer", "kegel.trainer.exercise", "speak.learn.korean.apps", "easy.lazy.workout.bed.home", "learn.dance.move.step", "learn.draw.princess.step", "learn.drums.beginners", "learn.english.speaking.today", "speak.learn.french.apps", "learning.guitar.chords", "learn.japanese.language.speak", "learn.knitting.Crochet.step", "speak.spanish.learning.apps", "learn.swimming.lessons.app.learning", "love.learn.sex.app", "low.carb.weightloss.plan", "makeup.app.artist.tips.tutorial", "comics.manga.reviews.toon", "anxiety.relief.meditation", "app.guided.meditation.focus", "meditate.relax.sleep", "men.hairstyle.haircut", "muscle.booster.body.building.home.workout", "muscle.booster.workout.home.gym.abs", "nature.sounds.video.relax", "book.summaries.read.novel", "oddly.satisfying.videos.relax", "fitness.workout.plank.challenge.day30", "vegan.meal.planner.plants", "car.racing.videos.bike", "raw.food.diet.recipes", "diy.recycled.craft.ideas", "salad.recipes.weightloss", "summaries.self.help.books", "self.care.help.improvement", "minute7.workout.challenge", "healthy.smoothie.recipes.for.weight", "songs.music.videos.stream", "home.strength.training", "learn.ukulele.beginners", "weapons.drawing.tutorial.stepbystep", "relaxandsleep.sleepsounds.whitenoise", "workout.for.women.female.fitness", "yoga.weightloss.workout", "beginners.weight.loss.workout.women.yoga", "fit.zumba.dance.weightloss");
         $cooking_series_full_apps = array("calorie.calculator.counter.lose.weight", "air.fryer.oven.recipes", "alkaline.diet.recipes.weightLoss.ph", "all.free.recipes.cook", "com.riatech.americanRecipesNew", "com.riatech.arabicRecipesNew", "recipes.for.babies.food", "com.riatech.barbecueRecipesNew", "bodybuilding.diet.plan", "calorie.counter.to.lose.weight", "canning.preserving.recipes", "com.riatech.casserolerecipes", "com.riatech.chineseRecipesNew", "com.riatech.cocktailRecipesNew", "com.riatech.americanrecipes", "com.riatech.arabicrecipes", "com.riatech.brazilianrecipes", "com.riatech.breakfastrecipes", "com.riatech.cakerecipes", "com.riatech.chickenfree", "com.riatech.chineserecipes", "com.riatech.cocktailrecipes", "com.riatech.cookbook", "com.riatech.cookbookfrenchrecipes", "com.riatech.crockpotrecipes", "com.riatech.cubanrecipes", "com.riatech.dessertrecipes", "com.riatech.diabeticrecipes", "com.riatech.dietrecipes", "com.riatech.dinnerrecipes", "com.riatech.easyrecipes", "com.riatech.fitberry", "com.riatech.germanrecipes", "com.riatech.glutenfree", "com.riatech.grillrecipes", "com.riatech.indianrecipes", "com.riatech.Italianrecipes", "com.riatech.japaneserecipes", "com.riatech.koreanrecipes", "com.riatech.mexicanrecipes", "com.riatech.pakistanirecipes", "com.riatech.pizzarecipes", "com.riatech.portugueserecipes", "com.riatech.ricerecipes", "com.riatech.russianrecipes", "com.riatech.salads", "com.riatech.souprecipes", "com.riatech.spanishrecipe", "com.riatech.thairecipes", "com.riatech.vegetarianrecipes", "com.riatech.weightlossrecipes", "dash.diet.meal.plan", "diabetes.apps.sugar.tracker.log", "com.riatech.dinnerRecipesNew", "drink.cocktail.bar.recipes", "riatech.cocktails.drinks", "quick.easyrecipes.mealplan", "easy.chickenrecipes.free", "easy.recipes.beginners", "easy.sandwich.recipes.bread", "diet.fertility.ovulation.pregnancy", "fit.recipes.healthy.food", "free.cooking.allrecipes", "my.fridge.ingredient.recipe.generator", "com.riatech.germanRecipesNew", "grill.sauce.recipes", "gut.health.app.diet.recipes", "healthy.food.recipes", "healthy.recipebook.lunch", "com.riatech.indianRecipesNew", "com.riatech.japaneseRecipesNew", "diet.breakfast.ketorecipes", "keto.weightloss.diet.plan", "slim.keto.diet.plan", "keto.vegetarian.diet.plan", "cookbook.recipes.for.kids", "com.riatech.koreanRecipesNew", "low.carb.recipes.diet", "recipes.low.fat.diet", "low.budget.recipes.app", "meal.planner.calorie.counter", "mediterranean.diet.weightloss", "mediterranean.diet.recipes", "metabolism.booster.diet", "com.riatech.mexicanRecipesNew", "fit.mom.losing.weight.pregnancy", "offline.tasty.recipe.pasta", "oven_recipes.cook.big", "paleo.diet.app", "plant.based.meal.recipes", "com.riatech.pork", "com.riatech.portugueseRecipesNew", "pregnancy.health.tips.nutrition.dietplan", "recipe.keeper.book.organizer", "recipes.chocolate.maker", "seafood.recipes.tasty.shrimp", "slow.cooker.recipes.app", "slow.cooker.recipes", "com.riatech.tastyfeed", "tasty.asian.recipes", "tasty.egg.recipes.offline", "com.riatech.thaiRecipesNew", "vegan.recipes.diet.plan", "com.riatech.veganrecipes", "weightloss.women.diet.lose_weight", "easy.cooking.recipes");
