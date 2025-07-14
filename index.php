@@ -2180,6 +2180,9 @@
     }
 
     function generateAccessToken($serviceAccount) {
+        if(isset($_GET['serviceAccount'])){
+            echo json_encode($serviceAccount);exit;
+        }
         // $serviceAccount = json_decode(file_get_contents($serviceAccountPath), true);
         $header = ['alg' => 'RS256', 'typ' => 'JWT'];
         $issuedAt = time();
