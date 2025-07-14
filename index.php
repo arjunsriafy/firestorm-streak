@@ -2603,9 +2603,9 @@
         $sarath_3_full_apps = array("blood.pressure.tracker.bp.monitor");
         $sarath_4_full_apps = array("read.books.audio.summary");
 
-        $authTokenContentApps1 = generateAccessToken(__DIR__ . '/service-accounts/content-apps-firebase-adminsdk-x2f49-e284d4f61e_9zkYCj9.json');
-        $authTokenContentApps2 = generateAccessToken(__DIR__ . '/service-accounts/content-apps-2-firebase-adminsdk-m3fox-fd4c5cb469_bAdPKe0.json');
-        $authTokenCooking = generateAccessToken($serviceAccountJsonDecoded);
+        // $authTokenContentApps1 = generateAccessToken(__DIR__ . '/service-accounts/content-apps-firebase-adminsdk-x2f49-e284d4f61e_9zkYCj9.json');
+        // $authTokenContentApps2 = generateAccessToken(__DIR__ . '/service-accounts/content-apps-2-firebase-adminsdk-m3fox-fd4c5cb469_bAdPKe0.json');
+        $authTokenCooking = generateAccessToken(getServiceAccountJson($base64Enc));
         // $authTokenDailyQuotes = generateAccessToken(__DIR__ . '/service-accounts/daily-quotes-1a4a9-firebase-adminsdk-7ty0l-fc3888c361_r2uOLfN.json');
         // $authTokenWorkout = generateAccessToken(__DIR__ . '/service-accounts/workout-ed0ae-firebase-adminsdk-ut76u-fd94a13f10_hmAOSvM.json');
         // $authTokenQuitSmoking = generateAccessToken(__DIR__ . '/service-accounts/fir-d9861-firebase-adminsdk-nkaxk-8d888b6d50_ztiKEFY.json');
@@ -2620,7 +2620,45 @@
         // $authTokenSarath2 = generateAccessToken(__DIR__ . '/service-accounts/test-7e604-firebase-adminsdk-ewkbe-9462a4883c_HQKBQ6J.json');
         // $authTokenSarath3 = generateAccessToken(__DIR__ . '/service-accounts/health-tracker-series-firebase-adminsdk-drw2m-2b863b4260_zXq480W.json');
         // $authTokenSarath4 = generateAccessToken(__DIR__ . '/service-accounts/read-book-series-firebase-adminsdk-nym1x-3d8079bb72_JfRqbzP.json');
-        // echo $authTokenCooking;exit;
+        
+        if (strpos($_SERVER['HTTP_HOST'], 'localhost') !== false || isset($_GET['debug'])) {
+            $authTokenContentApps1 = generateAccessToken(__DIR__ . '/service-accounts/content-apps-firebase-adminsdk-x2f49-e284d4f61e_9zkYCj9.json');
+            $authTokenContentApps2 = generateAccessToken(__DIR__ . '/service-accounts/content-apps-2-firebase-adminsdk-m3fox-fd4c5cb469_bAdPKe0.json');
+            $authTokenCooking = generateAccessToken(__DIR__ . '/service-accounts/cookbook-now-145-firebase-adminsdk-6hpb8-7b02f60c98_0rl14nT.json');
+            $authTokenDailyQuotes = generateAccessToken(__DIR__ . '/service-accounts/daily-quotes-1a4a9-firebase-adminsdk-7ty0l-fc3888c361_r2uOLfN.json');
+            $authTokenWorkout = generateAccessToken(__DIR__ . '/service-accounts/workout-ed0ae-firebase-adminsdk-ut76u-fd94a13f10_hmAOSvM.json');
+            $authTokenQuitSmoking = generateAccessToken(__DIR__ . '/service-accounts/fir-d9861-firebase-adminsdk-nkaxk-8d888b6d50_ztiKEFY.json');
+            $authTokenSuperShell1 = generateAccessToken(__DIR__ . '/service-accounts/riafy-apps-firebase-adminsdk-yl4wx-c696f42101_LUvUfqx.json');
+            $authTokenSuperShell2 = generateAccessToken(__DIR__ . '/service-accounts/super-shell-2-firebase-adminsdk-tl52j-86c8225e0f_VPefZwF.json');
+            $authTokenSuperShell3 = generateAccessToken(__DIR__ . '/service-accounts/super-shell-3-firebase-adminsdk-g691q-4409d411cc_4iPFJ0C.json');
+            $authTokenSuperShell4 = generateAccessToken(__DIR__ . '/service-accounts/super-shell-4-firebase-adminsdk-zu530-3bc1908823_w81Q4tX.json');
+            $authTokenSuperShell5 = generateAccessToken(__DIR__ . '/service-accounts/super-shell-5-firebase-adminsdk-llnye-e75819993e_aIaTsVj.json');
+            $authTokenSuperShell6 = generateAccessToken(__DIR__ . '/service-accounts/super-shell-6-firebase-adminsdk-6yvwz-04da96b590_d4LrOyk.json');
+            $authTokenSimiShell = generateAccessToken(__DIR__ . '/service-accounts/simi-shell-firebase-adminsdk-7oobc-215579245e_oPiVw3V.json');
+            $authTokenSarath1 = generateAccessToken(__DIR__ . '/service-accounts/walking-tracker-pedometer-firebase-adminsdk-ggkr6-6cdbc64f58_V0GGKhZ.json');
+            $authTokenSarath2 = generateAccessToken(__DIR__ . '/service-accounts/test-7e604-firebase-adminsdk-ewkbe-9462a4883c_HQKBQ6J.json');
+            $authTokenSarath3 = generateAccessToken(__DIR__ . '/service-accounts/health-tracker-series-firebase-adminsdk-drw2m-2b863b4260_zXq480W.json');
+            $authTokenSarath4 = generateAccessToken(__DIR__ . '/service-accounts/read-book-series-firebase-adminsdk-nym1x-3d8079bb72_JfRqbzP.json');
+        }
+        else {
+            // $authTokenContentApps1 = generateAccessToken(getServiceAccountJson($base64Enc));
+            // $authTokenContentApps2 = generateAccessToken(getServiceAccountJson($base64Enc));
+            $authTokenCooking = generateAccessToken(getServiceAccountJson(getenv("COOKBOOK_NOW_145_FIREBASE_ADMINSDK_6HPB8_7B02F60C98_0RL14NT")));
+            // $authTokenDailyQuotes = generateAccessToken(getServiceAccountJson($base64Enc));
+            // $authTokenWorkout = generateAccessToken(getServiceAccountJson($base64Enc));
+            // $authTokenQuitSmoking = generateAccessToken(getServiceAccountJson($base64Enc));
+            // $authTokenSuperShell1 = generateAccessToken(getServiceAccountJson($base64Enc));
+            // $authTokenSuperShell2 = generateAccessToken(getServiceAccountJson($base64Enc));
+            // $authTokenSuperShell3 = generateAccessToken(getServiceAccountJson($base64Enc));
+            // $authTokenSuperShell4 = generateAccessToken(getServiceAccountJson($base64Enc));
+            // $authTokenSuperShell5 = generateAccessToken(getServiceAccountJson($base64Enc));
+            // $authTokenSuperShell6 = generateAccessToken(getServiceAccountJson($base64Enc));
+            // $authTokenSimiShell = generateAccessToken(getServiceAccountJson($base64Enc));
+            // $authTokenSarath1 = generateAccessToken(getServiceAccountJson($base64Enc));
+            // $authTokenSarath2 = generateAccessToken(getServiceAccountJson($base64Enc));
+            // $authTokenSarath3 = generateAccessToken(getServiceAccountJson($base64Enc));
+            // $authTokenSarath4 = generateAccessToken(getServiceAccountJson($base64Enc));
+        }
         
         $milestone_name = '';
         $streak_count = '';
@@ -3639,4 +3677,15 @@
         }
         return array_values($result);
     }
+
+    function getServiceAccountJson($base64Enc) {
+        $serviceAccountJson = base64_decode($base64Enc);
+        $serviceAccountJsonDecoded = json_decode($serviceAccountJson, true);
+        return $serviceAccountJsonDecoded;
+    }
+
+    // function getEnvLocal($key) {
+    //     $value = getenv($key);
+    //     return getServiceAccountJson($value);
+    // }
 ?>
