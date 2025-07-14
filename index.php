@@ -2588,6 +2588,9 @@
         curl_close($ch);
         $userData = json_decode($response, true);
         $user = $userData[0];
+        if(isset($_GET['userView'])){
+            echo json_encode($user);exit;
+        }
         $appid = $user['appname'];
         $firstName = explode(' ', trim($user['name']))[0];
         $fcmToken = $user['fcmToken'];
