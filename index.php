@@ -2250,7 +2250,7 @@
         $sarath_3_full_apps = array("blood.pressure.tracker.bp.monitor");
         $sarath_4_full_apps = array("read.books.audio.summary");
 
-        if (strpos($_SERVER['HTTP_HOST'], 'localhost') !== false || isset($_GET['debug'])) {
+        if (strpos($_SERVER['HTTP_HOST'], 'localhost') !== false) {
             $authTokenContentApps1 = generateAccessToken(fileGetContentLocal(__DIR__ . '/service-accounts/content-apps-firebase-adminsdk-x2f49-e284d4f61e_9zkYCj9.json'));
             $authTokenContentApps2 = generateAccessToken(fileGetContentLocal(__DIR__ . '/service-accounts/content-apps-2-firebase-adminsdk-m3fox-fd4c5cb469_bAdPKe0.json'));
             $authTokenCooking = generateAccessToken(fileGetContentLocal(__DIR__ . '/service-accounts/cookbook-now-145-firebase-adminsdk-6hpb8-7b02f60c98_0rl14nT.json'));
@@ -2636,7 +2636,7 @@
         $sarath_3_full_apps = array("blood.pressure.tracker.bp.monitor");
         $sarath_4_full_apps = array("read.books.audio.summary");
 
-        if (strpos($_SERVER['HTTP_HOST'], 'localhost') !== false || isset($_GET['debug'])) {
+        if (strpos($_SERVER['HTTP_HOST'], 'localhost') !== false) {
             $authTokenContentApps1 = generateAccessToken(fileGetContentLocal(__DIR__ . '/service-accounts/content-apps-firebase-adminsdk-x2f49-e284d4f61e_9zkYCj9.json'));
             $authTokenContentApps2 = generateAccessToken(fileGetContentLocal(__DIR__ . '/service-accounts/content-apps-2-firebase-adminsdk-m3fox-fd4c5cb469_bAdPKe0.json'));
             $authTokenCooking = generateAccessToken(fileGetContentLocal(__DIR__ . '/service-accounts/cookbook-now-145-firebase-adminsdk-6hpb8-7b02f60c98_0rl14nT.json'));
@@ -3703,9 +3703,4 @@
         $serviceAccountData = json_decode(file_get_contents($serviceAccountPath), true);
         return $serviceAccountData;
     }
-
-    // function getEnvLocal($key) {
-    //     $value = getenv($key);
-    //     return getServiceAccountJson($value);
-    // }
 ?>
