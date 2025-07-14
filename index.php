@@ -2276,23 +2276,23 @@
             $authTokenSarath4 = generateAccessToken(fileGetContentLocal(__DIR__ . '/service-accounts/read-book-series-firebase-adminsdk-nym1x-3d8079bb72_JfRqbzP.json'));
         }
         else {
-            $authTokenContentApps1 = generateAccessToken(getServiceAccountJson("CONTENT_APPS_FIREBASE_ADMINSDK_X2F49_E284D4F61E_9ZKYCJ9"));
-            $authTokenContentApps2 = generateAccessToken(getServiceAccountJson("CONTENT_APPS_2_FIREBASE_ADMINSDK_M3FOX_FD4C5CB469_BADPKE0"));
+            $authTokenContentApps1 = generateAccessToken(getServiceAccountJson(getenv("CONTENT_APPS_FIREBASE_ADMINSDK_X2F49_E284D4F61E_9ZKYCJ9")));
+            $authTokenContentApps2 = generateAccessToken(getServiceAccountJson(getenv("CONTENT_APPS_2_FIREBASE_ADMINSDK_M3FOX_FD4C5CB469_BADPKE0")));
             $authTokenCooking = generateAccessToken(getServiceAccountJson(getenv("COOKBOOK_NOW_145_FIREBASE_ADMINSDK_6HPB8_7B02F60C98_0RL14NT")));
-            $authTokenDailyQuotes = generateAccessToken(getServiceAccountJson("DAILY_QUOTES_1A4A9_FIREBASE_ADMINSDK_7TY0L_FC3888C361_R2UOLFN"));
-            $authTokenWorkout = generateAccessToken(getServiceAccountJson("WORKOUT_ED0AE_FIREBASE_ADMINSDK_UT76U_FD94A13F10_HMAOSVM"));
-            $authTokenQuitSmoking = generateAccessToken(getServiceAccountJson("FIR_D9861_FIREBASE_ADMINSDK_NKAXK_8D888B6D50_ZTIKEFY"));
-            $authTokenSuperShell1 = generateAccessToken(getServiceAccountJson("RIAFY_APPS_FIREBASE_ADMINSDK_YL4WX_C696F42101_LUVUFQX"));
-            $authTokenSuperShell2 = generateAccessToken(getServiceAccountJson("SUPER_SHELL_2_FIREBASE_ADMINSDK_TL52J_86C8225E0F_VPEFZWF"));
-            $authTokenSuperShell3 = generateAccessToken(getServiceAccountJson("SUPER_SHELL_3_FIREBASE_ADMINSDK_G691Q_4409D411CC_4IPFJ0C"));
-            $authTokenSuperShell4 = generateAccessToken(getServiceAccountJson("SUPER_SHELL_4_FIREBASE_ADMINSDK_ZU530_3BC1908823_W81Q4TX"));
-            $authTokenSuperShell5 = generateAccessToken(getServiceAccountJson("SUPER_SHELL_5_FIREBASE_ADMINSDK_LLNYE_E75819993E_AIATSVJ"));
-            $authTokenSuperShell6 = generateAccessToken(getServiceAccountJson("SUPER_SHELL_6_FIREBASE_ADMINSDK_6YVWZ_04DA96B590_D4LROYK"));
-            $authTokenSimiShell = generateAccessToken(getServiceAccountJson("SIMI_SHELL_FIREBASE_ADMINSDK_7OOBC_215579245E_OPIVW3V"));
-            $authTokenSarath1 = generateAccessToken(getServiceAccountJson("WALKING_TRACKER_PEDOMETER_FIREBASE_ADMINSDK_GGKR6_6CDBC64F58_V0GGKHZ"));
-            $authTokenSarath2 = generateAccessToken(getServiceAccountJson("TEST_7E604_FIREBASE_ADMINSDK_EWKBE_9462A4883C_HQKBQ6J"));
-            $authTokenSarath3 = generateAccessToken(getServiceAccountJson("HEALTH_TRACKER_SERIES_FIREBASE_ADMINSDK_DRW2M_2B863B4260_ZXQ480W"));
-            $authTokenSarath4 = generateAccessToken(getServiceAccountJson("READ_BOOK_SERIES_FIREBASE_ADMINSDK_NYM1X_3D8079BB72_JFRQBZP"));
+            $authTokenDailyQuotes = generateAccessToken(getServiceAccountJson(getenv("DAILY_QUOTES_1A4A9_FIREBASE_ADMINSDK_7TY0L_FC3888C361_R2UOLFN")));
+            $authTokenWorkout = generateAccessToken(getServiceAccountJson(getenv("WORKOUT_ED0AE_FIREBASE_ADMINSDK_UT76U_FD94A13F10_HMAOSVM")));
+            $authTokenQuitSmoking = generateAccessToken(getServiceAccountJson(getenv("FIR_D9861_FIREBASE_ADMINSDK_NKAXK_8D888B6D50_ZTIKEFY")));
+            $authTokenSuperShell1 = generateAccessToken(getServiceAccountJson(getenv("RIAFY_APPS_FIREBASE_ADMINSDK_YL4WX_C696F42101_LUVUFQX")));
+            $authTokenSuperShell2 = generateAccessToken(getServiceAccountJson(getenv("SUPER_SHELL_2_FIREBASE_ADMINSDK_TL52J_86C8225E0F_VPEFZWF")));
+            $authTokenSuperShell3 = generateAccessToken(getServiceAccountJson(getenv("SUPER_SHELL_3_FIREBASE_ADMINSDK_G691Q_4409D411CC_4IPFJ0C")));
+            $authTokenSuperShell4 = generateAccessToken(getServiceAccountJson(getenv("SUPER_SHELL_4_FIREBASE_ADMINSDK_ZU530_3BC1908823_W81Q4TX")));
+            $authTokenSuperShell5 = generateAccessToken(getServiceAccountJson(getenv("SUPER_SHELL_5_FIREBASE_ADMINSDK_LLNYE_E75819993E_AIATSVJ")));
+            $authTokenSuperShell6 = generateAccessToken(getServiceAccountJson(getenv("SUPER_SHELL_6_FIREBASE_ADMINSDK_6YVWZ_04DA96B590_D4LROYK")));
+            $authTokenSimiShell = generateAccessToken(getServiceAccountJson(getenv("SIMI_SHELL_FIREBASE_ADMINSDK_7OOBC_215579245E_OPIVW3V")));
+            $authTokenSarath1 = generateAccessToken(getServiceAccountJson(getenv("WALKING_TRACKER_PEDOMETER_FIREBASE_ADMINSDK_GGKR6_6CDBC64F58_V0GGKHZ")));
+            $authTokenSarath2 = generateAccessToken(getServiceAccountJson(getenv("TEST_7E604_FIREBASE_ADMINSDK_EWKBE_9462A4883C_HQKBQ6J")));
+            $authTokenSarath3 = generateAccessToken(getServiceAccountJson(getenv("HEALTH_TRACKER_SERIES_FIREBASE_ADMINSDK_DRW2M_2B863B4260_ZXQ480W")));
+            $authTokenSarath4 = generateAccessToken(getServiceAccountJson(getenv("READ_BOOK_SERIES_FIREBASE_ADMINSDK_NYM1X_3D8079BB72_JFRQBZP")));
         }
         
         $milestone_name = '';
@@ -2665,23 +2665,23 @@
             $authTokenSarath4 = generateAccessToken(fileGetContentLocal(__DIR__ . '/service-accounts/read-book-series-firebase-adminsdk-nym1x-3d8079bb72_JfRqbzP.json'));
         }
         else {
-            $authTokenContentApps1 = generateAccessToken(getServiceAccountJson("CONTENT_APPS_FIREBASE_ADMINSDK_X2F49_E284D4F61E_9ZKYCJ9"));
-            $authTokenContentApps2 = generateAccessToken(getServiceAccountJson("CONTENT_APPS_2_FIREBASE_ADMINSDK_M3FOX_FD4C5CB469_BADPKE0"));
+            $authTokenContentApps1 = generateAccessToken(getServiceAccountJson(getenv("CONTENT_APPS_FIREBASE_ADMINSDK_X2F49_E284D4F61E_9ZKYCJ9")));
+            $authTokenContentApps2 = generateAccessToken(getServiceAccountJson(getenv("CONTENT_APPS_2_FIREBASE_ADMINSDK_M3FOX_FD4C5CB469_BADPKE0")));
             $authTokenCooking = generateAccessToken(getServiceAccountJson(getenv("COOKBOOK_NOW_145_FIREBASE_ADMINSDK_6HPB8_7B02F60C98_0RL14NT")));
-            $authTokenDailyQuotes = generateAccessToken(getServiceAccountJson("DAILY_QUOTES_1A4A9_FIREBASE_ADMINSDK_7TY0L_FC3888C361_R2UOLFN"));
-            $authTokenWorkout = generateAccessToken(getServiceAccountJson("WORKOUT_ED0AE_FIREBASE_ADMINSDK_UT76U_FD94A13F10_HMAOSVM"));
-            $authTokenQuitSmoking = generateAccessToken(getServiceAccountJson("FIR_D9861_FIREBASE_ADMINSDK_NKAXK_8D888B6D50_ZTIKEFY"));
-            $authTokenSuperShell1 = generateAccessToken(getServiceAccountJson("RIAFY_APPS_FIREBASE_ADMINSDK_YL4WX_C696F42101_LUVUFQX"));
-            $authTokenSuperShell2 = generateAccessToken(getServiceAccountJson("SUPER_SHELL_2_FIREBASE_ADMINSDK_TL52J_86C8225E0F_VPEFZWF"));
-            $authTokenSuperShell3 = generateAccessToken(getServiceAccountJson("SUPER_SHELL_3_FIREBASE_ADMINSDK_G691Q_4409D411CC_4IPFJ0C"));
-            $authTokenSuperShell4 = generateAccessToken(getServiceAccountJson("SUPER_SHELL_4_FIREBASE_ADMINSDK_ZU530_3BC1908823_W81Q4TX"));
-            $authTokenSuperShell5 = generateAccessToken(getServiceAccountJson("SUPER_SHELL_5_FIREBASE_ADMINSDK_LLNYE_E75819993E_AIATSVJ"));
-            $authTokenSuperShell6 = generateAccessToken(getServiceAccountJson("SUPER_SHELL_6_FIREBASE_ADMINSDK_6YVWZ_04DA96B590_D4LROYK"));
-            $authTokenSimiShell = generateAccessToken(getServiceAccountJson("SIMI_SHELL_FIREBASE_ADMINSDK_7OOBC_215579245E_OPIVW3V"));
-            $authTokenSarath1 = generateAccessToken(getServiceAccountJson("WALKING_TRACKER_PEDOMETER_FIREBASE_ADMINSDK_GGKR6_6CDBC64F58_V0GGKHZ"));
-            $authTokenSarath2 = generateAccessToken(getServiceAccountJson("TEST_7E604_FIREBASE_ADMINSDK_EWKBE_9462A4883C_HQKBQ6J"));
-            $authTokenSarath3 = generateAccessToken(getServiceAccountJson("HEALTH_TRACKER_SERIES_FIREBASE_ADMINSDK_DRW2M_2B863B4260_ZXQ480W"));
-            $authTokenSarath4 = generateAccessToken(getServiceAccountJson("READ_BOOK_SERIES_FIREBASE_ADMINSDK_NYM1X_3D8079BB72_JFRQBZP"));
+            $authTokenDailyQuotes = generateAccessToken(getServiceAccountJson(getenv("DAILY_QUOTES_1A4A9_FIREBASE_ADMINSDK_7TY0L_FC3888C361_R2UOLFN")));
+            $authTokenWorkout = generateAccessToken(getServiceAccountJson(getenv("WORKOUT_ED0AE_FIREBASE_ADMINSDK_UT76U_FD94A13F10_HMAOSVM")));
+            $authTokenQuitSmoking = generateAccessToken(getServiceAccountJson(getenv("FIR_D9861_FIREBASE_ADMINSDK_NKAXK_8D888B6D50_ZTIKEFY")));
+            $authTokenSuperShell1 = generateAccessToken(getServiceAccountJson(getenv("RIAFY_APPS_FIREBASE_ADMINSDK_YL4WX_C696F42101_LUVUFQX")));
+            $authTokenSuperShell2 = generateAccessToken(getServiceAccountJson(getenv("SUPER_SHELL_2_FIREBASE_ADMINSDK_TL52J_86C8225E0F_VPEFZWF")));
+            $authTokenSuperShell3 = generateAccessToken(getServiceAccountJson(getenv("SUPER_SHELL_3_FIREBASE_ADMINSDK_G691Q_4409D411CC_4IPFJ0C")));
+            $authTokenSuperShell4 = generateAccessToken(getServiceAccountJson(getenv("SUPER_SHELL_4_FIREBASE_ADMINSDK_ZU530_3BC1908823_W81Q4TX")));
+            $authTokenSuperShell5 = generateAccessToken(getServiceAccountJson(getenv("SUPER_SHELL_5_FIREBASE_ADMINSDK_LLNYE_E75819993E_AIATSVJ")));
+            $authTokenSuperShell6 = generateAccessToken(getServiceAccountJson(getenv("SUPER_SHELL_6_FIREBASE_ADMINSDK_6YVWZ_04DA96B590_D4LROYK")));
+            $authTokenSimiShell = generateAccessToken(getServiceAccountJson(getenv("SIMI_SHELL_FIREBASE_ADMINSDK_7OOBC_215579245E_OPIVW3V")));
+            $authTokenSarath1 = generateAccessToken(getServiceAccountJson(getenv("WALKING_TRACKER_PEDOMETER_FIREBASE_ADMINSDK_GGKR6_6CDBC64F58_V0GGKHZ")));
+            $authTokenSarath2 = generateAccessToken(getServiceAccountJson(getenv("TEST_7E604_FIREBASE_ADMINSDK_EWKBE_9462A4883C_HQKBQ6J")));
+            $authTokenSarath3 = generateAccessToken(getServiceAccountJson(getenv("HEALTH_TRACKER_SERIES_FIREBASE_ADMINSDK_DRW2M_2B863B4260_ZXQ480W")));
+            $authTokenSarath4 = generateAccessToken(getServiceAccountJson(getenv("READ_BOOK_SERIES_FIREBASE_ADMINSDK_NYM1X_3D8079BB72_JFRQBZP")));
         }
         
         $milestone_name = '';
