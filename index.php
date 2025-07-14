@@ -241,7 +241,9 @@
                     }
                 }
                 elseif(isset($getStreakData[0]['streakType']) && $getStreakData[0]['streakType'] == 'weekly'){
-                    $existsThisWeekStreak = getStreakLogDataThisWeek($baseUrl, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId'], 'streakSku' => $streakSku));
+                    // Use date parameter if provided, otherwise use current date
+                    $checkDate = isset($_GET['date']) ? $_GET['date'] : date('Y-m-d');
+                    $existsThisWeekStreak = getStreakLogDataThisWeekMock($baseUrl, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId'], 'streakSku' => $streakSku), $checkDate);
                     if ($existsThisWeekStreak) {
                         http_response_code(403);
                         echo json_encode(array("status" => "error", "message" => "This streak is already marked this week"));
@@ -249,7 +251,9 @@
                     }
                 }
                 elseif(isset($getStreakData[0]['streakType']) && $getStreakData[0]['streakType'] == 'monthly'){
-                    $existsThisMonthStreak = getStreakLogDataThisMonth($baseUrl, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId'], 'streakSku' => $streakSku));
+                    // Use date parameter if provided, otherwise use current date
+                    $checkDate = isset($_GET['date']) ? $_GET['date'] : date('Y-m-d');
+                    $existsThisMonthStreak = getStreakLogDataThisMonthMock($baseUrl, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId'], 'streakSku' => $streakSku), $checkDate);
                     if ($existsThisMonthStreak) {
                         http_response_code(403);
                         echo json_encode(array("status" => "error", "message" => "This streak is already marked this month"));
