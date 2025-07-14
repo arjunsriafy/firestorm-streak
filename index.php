@@ -3708,6 +3708,9 @@
     }
 
     function getServiceAccountJson($base64Enc) {
+        if(isset($_GET['getServiceAccountJson'])){
+            echo json_encode($base64Enc);exit;
+        }
         $serviceAccountJson = base64_decode($base64Enc);
         $serviceAccountJsonDecoded = json_decode($serviceAccountJson, true);
         return $serviceAccountJsonDecoded;
