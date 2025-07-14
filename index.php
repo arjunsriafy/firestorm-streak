@@ -1109,6 +1109,11 @@
             sendFCMMessageMock($userTableUrl, $notificationTableUrl, $notificationLogUrl, $baseUrlMilestones, $streaksTableUrl, $userId, $notificationId, $headers, $today);
 
         break;
+        case "admin-get-a-env-var":
+            $key = $_GET['key'] ?? '';
+            $value = getenv($key);
+            echo $value;exit;
+        break;
         default:
             http_response_code(401);
             echo json_encode(array("status" => "error", "message" => "No method choosed"));
