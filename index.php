@@ -1114,6 +1114,10 @@
             $value = getenv($key);
             echo $value;exit;
         break;
+        case "admin-create-notifications":
+            $appId = $_GET['appId'] ?? '';
+            echo json_encode(array("status" => "pending", "message" => "Notifications integration on progress", "appId" => $appId));
+        break;
         default:
             http_response_code(401);
             echo json_encode(array("status" => "error", "message" => "No method choosed"));
