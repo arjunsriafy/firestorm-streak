@@ -41,6 +41,7 @@
     $method = "$user-$action";
     
     $projectId = 'nhvhkhlpxuvnzhorhrnd';
+    $postgrestUrl = "https://$projectId.supabase.co/rest/v1";
     $apiKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5odmhraGxweHV2bnpob3Jocm5kIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MTAyMTQ0MywiZXhwIjoyMDY2NTk3NDQzfQ.g-8ClcEkhrykKAWDdEC3La22sJq4M5IzSpgZT9H4OJg';
 
     // Common headers
@@ -60,19 +61,19 @@
         // APIs for app
         case "app-log-a-streak":
             // Log a streak
-            $baseUrl = "https://$projectId.supabase.co/rest/v1/streakLog";
+            $baseUrl = "$postgrestUrl/streakLog";
             $streakSku = '';
             if(isset($_GET['streakSku'])){
                 $streakSku = $_GET['streakSku'];
             }
             else{
-                $baseUrlMilestones = "https://$projectId.supabase.co/rest/v1/milestones";
+                $baseUrlMilestones = "$postgrestUrl/milestones";
                 $milestonesOfApps = getStreakSkuOfAMilestone($baseUrlMilestones, $headers, array("appname" => $_GET['appname']));
                 $streakSku = $milestonesOfApps[0]["streakSku"];
             }
             $payloadToInsert = array('appname' => $_GET['appname'], 'userId' => $_GET['userId'], 'streakSku' => $streakSku);
             $lang = $_GET['lang'];
-            $baseUrlStreaks =  "https://$projectId.supabase.co/rest/v1/streaks";
+            $baseUrlStreaks =  "$postgrestUrl/streaks";
             $getStreakData = getStreakData($baseUrlStreaks, $headers, array('sku' => $streakSku));
             if ($getStreakData) {
                 if(isset($getStreakData[0]['streakType']) && $getStreakData[0]['streakType'] == 'daily'){
@@ -119,8 +120,8 @@
                 }
                 else{
                     // Check pause logic for streak continuation
-                    $baseUrlPaused = "https://$projectId.supabase.co/rest/v1/streakPause";
-                    $pauseLogUrl = "https://$projectId.supabase.co/rest/v1/streakPauseLog";
+                    $baseUrlPaused = "$postgrestUrl/streakPause";
+                    $pauseLogUrl = "$postgrestUrl/streakPauseLog";
                     $params = array(
                         'appname' => $_GET['appname'],
                         'userId' => $_GET['userId'],
@@ -131,8 +132,8 @@
             }
             elseif ($streakType == 'weekly') {
                 // Auto-resume pause if logging a streak while paused
-                $baseUrlPaused = "https://$projectId.supabase.co/rest/v1/streakPause";
-                $pauseLogUrl = "https://$projectId.supabase.co/rest/v1/streakPauseLog";
+                $baseUrlPaused = "$postgrestUrl/streakPause";
+                $pauseLogUrl = "$postgrestUrl/streakPauseLog";
                 
                 // Check if user is currently paused
                 $pauseData = checkPauseExist($baseUrlPaused, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId']));
@@ -171,8 +172,8 @@
             }
             elseif ($streakType == 'monthly') {
                 // Auto-resume pause if logging a streak while paused
-                $baseUrlPaused = "https://$projectId.supabase.co/rest/v1/streakPause";
-                $pauseLogUrl = "https://$projectId.supabase.co/rest/v1/streakPauseLog";
+                $baseUrlPaused = "$postgrestUrl/streakPause";
+                $pauseLogUrl = "$postgrestUrl/streakPauseLog";
                 
                 // Check if user is currently paused
                 $pauseData = checkPauseExist($baseUrlPaused, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId']));
@@ -245,12 +246,12 @@
                 "platform" => $_GET['platform'] ?? 'ios'
             );
             // store user data
-            $userTable = "https://$projectId.supabase.co/rest/v1/users";
+            $userTable = "$postgrestUrl/users";
             $user = storeUserData($userTable, $headers, $userData);
-            $baseUrlMilestones = "https://$projectId.supabase.co/rest/v1/milestones";
+            $baseUrlMilestones = "$postgrestUrl/milestones";
             $checkAnyMilestoneExist = checkAnyMilestoneExist($baseUrlMilestones, $headers, array('streakSku' => $streakSku, 'streakCount' => $count, 'appname' => $_GET['appname']));
             if ($checkAnyMilestoneExist) {
-                $baseUrlUserMilestones = "https://$projectId.supabase.co/rest/v1/userMilestones";
+                $baseUrlUserMilestones = "$postgrestUrl/userMilestones";
                 $checkAnyMilestoneExistIsAchieved = checkAnyMilestoneExistIsAchieved($baseUrlUserMilestones, $headers, array('milestoneSku' => $checkAnyMilestoneExist[0]['sku'], 'appname' => $_GET['appname'], "userId" => $_GET['userId']));
                 if($checkAnyMilestoneExistIsAchieved == false){
                     $insertUserMileStonePayload = array(
@@ -281,8 +282,8 @@
         break;
         case "app-pause-streak":
             // Pause streak
-            $baseUrl = "https://$projectId.supabase.co/rest/v1/streakPause";
-            $pauseLogUrl = "https://$projectId.supabase.co/rest/v1/streakPauseLog";
+            $baseUrl = "$postgrestUrl/streakPause";
+            $pauseLogUrl = "$postgrestUrl/streakPauseLog";
             $checkPauseExist = checkPauseExist($baseUrl, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId']));
             if ($checkPauseExist) {
                 $id = $checkPauseExist[0]['id'];
@@ -339,8 +340,8 @@
         break;
         case "app-resume-streak":
             // Resume streak
-            $baseUrl = "https://$projectId.supabase.co/rest/v1/streakPause";
-            $pauseLogUrl = "https://$projectId.supabase.co/rest/v1/streakPauseLog";
+            $baseUrl = "$postgrestUrl/streakPause";
+            $pauseLogUrl = "$postgrestUrl/streakPauseLog";
             $checkPauseExist = checkPauseExist($baseUrl, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId']));
             if ($checkPauseExist) {
                 $id = $checkPauseExist[0]['id'];
@@ -370,7 +371,7 @@
         break;
         case "app-get-all-streaks":
             // Read all milestones of app
-            $baseUrlMilestones = "https://$projectId.supabase.co/rest/v1/milestones";
+            $baseUrlMilestones = "$postgrestUrl/milestones";
             $allMilestonesApp = getAllMilestonesApp($baseUrlMilestones, $headers, $_GET['appname']);
             
             if(isset($_GET['lang']) && $_GET['lang'] != "en"){
@@ -394,7 +395,7 @@
                 return $milestone;
             }, $allMilestonesApp);
 
-            $baseUrlUserMilestones = "https://$projectId.supabase.co/rest/v1/userMilestones";
+            $baseUrlUserMilestones = "$postgrestUrl/userMilestones";
             $allAchievedMilestonesOfUser = getAllAchievedMilestonesOfUser($baseUrlUserMilestones, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId']));
             $completedIds = array_column($allAchievedMilestonesOfUser, 'milestoneId');
             $milestones = array_map(function ($item) use ($completedIds) {
@@ -408,9 +409,9 @@
             $streaks = array();
             if(isset($milestones[0])){
                 $streakId = $milestones[0]["streakId"];
-                $baseUrlStreaks = "https://$projectId.supabase.co/rest/v1/streaks";
+                $baseUrlStreaks = "$postgrestUrl/streaks";
                 $allStreaksApp = getAllStreaksApp($baseUrlStreaks, $headers, array('id' => $streakId));
-                $baseUrlStreakLogs = "https://$projectId.supabase.co/rest/v1/streakLog";
+                $baseUrlStreakLogs = "$postgrestUrl/streakLog";
                 $allStreakLogsApp = getAllStreakLogsApp($baseUrlStreakLogs, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId'], 'order' => ['created_at' => 'desc']));
     
                 $streak_marked = array_column($allStreakLogsApp, 'created_at');
@@ -459,11 +460,11 @@
                 "platform" => $_GET['platform'] ?? 'ios'
             );
             // store user data
-            $userTable = "https://$projectId.supabase.co/rest/v1/users";
+            $userTable = "$postgrestUrl/users";
             $user = storeUserData($userTable, $headers, $userData);
             
             // Get pause log data
-            $pauseLogUrl = "https://$projectId.supabase.co/rest/v1/streakPauseLog";
+            $pauseLogUrl = "$postgrestUrl/streakPauseLog";
             $pauseLogData = getAllStreakLogsApp($pauseLogUrl, $headers, array(
                 'appname' => $_GET['appname'],
                 'userId' => $_GET['userId'],
@@ -574,32 +575,32 @@
         break;
         case "app-clear-all-data":
             // Clear all streak data of user
-            $baseUrlStreakLogs = "https://$projectId.supabase.co/rest/v1/streakLog";
+            $baseUrlStreakLogs = "$postgrestUrl/streakLog";
             $deleteAllStreakLogsAppUser = deleteAllStreakLogsAppUser($baseUrlStreakLogs, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId']));
-            $baseUrlUserMilestones = "https://$projectId.supabase.co/rest/v1/userMilestones";
+            $baseUrlUserMilestones = "$postgrestUrl/userMilestones";
             $deleteAllMilestonesAppUser = deleteAllMilestonesAppUser($baseUrlUserMilestones, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId']));
-            $baseUrlUserStreakPause = "https://$projectId.supabase.co/rest/v1/streakPause";
+            $baseUrlUserStreakPause = "$postgrestUrl/streakPause";
             $deleteAllStreakPauseAppUser = deleteAllStreakPause($baseUrlUserStreakPause, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId']));
-            $baseUrlUserStreakPauseLogs = "https://$projectId.supabase.co/rest/v1/streakPauseLog";
+            $baseUrlUserStreakPauseLogs = "$postgrestUrl/streakPauseLog";
             $deleteAllStreakPauseLogsAppUser = deleteAllStreakPauseLogs($baseUrlUserStreakPauseLogs, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId']));
             echo json_encode(array("status" => "success", "message" => "Streak log and achieved milestones deleted succesfully", "response" => $deleteAllStreakLogsAppUser));
         break;
         case "app-mark-mock-streak":
             // Mark mock streak
-            $baseUrl = "https://$projectId.supabase.co/rest/v1/streakLog";
+            $baseUrl = "$postgrestUrl/streakLog";
             $streakSku = '';
             if(isset($_GET['streakSku'])){
                 $streakSku = $_GET['streakSku'];
             }
             else{
-                $baseUrlMilestones = "https://$projectId.supabase.co/rest/v1/milestones";
+                $baseUrlMilestones = "$postgrestUrl/milestones";
                 $milestonesOfApps = getStreakSkuOfAMilestone($baseUrlMilestones, $headers, array("appname" => $_GET['appname']));
                 $streakSku = $milestonesOfApps[0]["streakSku"];
             }
             $payloadToInsert = array('appname' => $_GET['appname'], 'userId' => $_GET['userId'], 'streakSku' => $streakSku);
             $lang = $_GET['lang'];
             $mock_date = $_GET['date'];
-            $baseUrlStreaks =  "https://$projectId.supabase.co/rest/v1/streaks";
+            $baseUrlStreaks =  "$postgrestUrl/streaks";
             $getStreakData = getStreakData($baseUrlStreaks, $headers, array('sku' => $streakSku));
             if ($getStreakData) {
                 if(isset($getStreakData[0]['streakType']) && $getStreakData[0]['streakType'] == 'daily'){
@@ -642,8 +643,8 @@
                 }
                 else{
                     // Check pause logic for streak continuation (for mock data, we need to get the last streak before the mock date)
-                    $baseUrlPaused = "https://$projectId.supabase.co/rest/v1/streakPause";
-                    $pauseLogUrl = "https://$projectId.supabase.co/rest/v1/streakPauseLog";
+                    $baseUrlPaused = "$postgrestUrl/streakPause";
+                    $pauseLogUrl = "$postgrestUrl/streakPauseLog";
                     $params = array(
                         'appname' => $_GET['appname'],
                         'userId' => $_GET['userId'],
@@ -664,8 +665,8 @@
             }
             elseif ($streakType == 'weekly') {
                 // Auto-resume pause if logging a streak while paused
-                $baseUrlPaused = "https://$projectId.supabase.co/rest/v1/streakPause";
-                $pauseLogUrl = "https://$projectId.supabase.co/rest/v1/streakPauseLog";
+                $baseUrlPaused = "$postgrestUrl/streakPause";
+                $pauseLogUrl = "$postgrestUrl/streakPauseLog";
                 
                 // Check if user is currently paused
                 $pauseData = checkPauseExist($baseUrlPaused, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId']));
@@ -714,8 +715,8 @@
             }
             elseif ($streakType == 'monthly') {
                 // Auto-resume pause if logging a streak while paused
-                $baseUrlPaused = "https://$projectId.supabase.co/rest/v1/streakPause";
-                $pauseLogUrl = "https://$projectId.supabase.co/rest/v1/streakPauseLog";
+                $baseUrlPaused = "$postgrestUrl/streakPause";
+                $pauseLogUrl = "$postgrestUrl/streakPauseLog";
                 
                 // Check if user is currently paused
                 $pauseData = checkPauseExist($baseUrlPaused, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId']));
@@ -800,18 +801,18 @@
                 "platform" => $_GET['platform'] ?? 'ios'
             );
             // store user data
-            $userTable = "https://$projectId.supabase.co/rest/v1/users";
+            $userTable = "$postgrestUrl/users";
             $user = storeUserData($userTable, $headers, $userData);
 
-            $baseUrlMilestones = "https://$projectId.supabase.co/rest/v1/milestones";
+            $baseUrlMilestones = "$postgrestUrl/milestones";
             $checkAnyMilestoneExist = checkAnyMilestoneExist($baseUrlMilestones, $headers, array('streakSku' => $streakSku, 'streakCount' => $count, 'appname' => $_GET['appname']));
             
             // Fetch notification from table
-            $notificationTableUrl = "https://$projectId.supabase.co/rest/v1/notifications";
+            $notificationTableUrl = "$postgrestUrl/notifications";
             $notification = getNotificationFromTable($notificationTableUrl, $headers, $_GET['appname'], $lang, 'streak_break');
             
             if ($checkAnyMilestoneExist) {
-                $baseUrlUserMilestones = "https://$projectId.supabase.co/rest/v1/userMilestones";
+                $baseUrlUserMilestones = "$postgrestUrl/userMilestones";
                 $checkAnyMilestoneExistIsAchieved = checkAnyMilestoneExistIsAchieved($baseUrlUserMilestones, $headers, array('milestoneSku' => $checkAnyMilestoneExist[0]['sku'], 'appname' => $_GET['appname'], "userId" => $_GET['userId']));
                 if($checkAnyMilestoneExistIsAchieved == false){
                     $insertUserMileStonePayload = array(
@@ -843,14 +844,14 @@
         case "admin-send-notification":
             // Get users who need streak notifications
             $appname = $_GET['appname'] ?? null; // Optional: filter by specific app
-            $userTableUrl = "https://$projectId.supabase.co/rest/v1/users";
-            $streakLogTableUrl = "https://$projectId.supabase.co/rest/v1/streakLog";
-            $usersMissingStreakFunctionUrl = "https://$projectId.supabase.co/rest/v1/rpc/users_missing_streak";
-            $baseUrlMilestones = "https://$projectId.supabase.co/rest/v1/milestones";
-            $baseUrlUserMilestones = "https://$projectId.supabase.co/rest/v1/userMilestones";
-            $usersEligibleForMilestoneTomorrowFunctionUrl = "https://$projectId.supabase.co/rest/v1/rpc/get_eligible_users_for_tomorrow_milestone";
-            $notificationLogUrl = "https://$projectId.supabase.co/rest/v1/notificationLog";
-            $notificationTableUrl = "https://$projectId.supabase.co/rest/v1/notifications";
+            $userTableUrl = "$postgrestUrl/users";
+            $streakLogTableUrl = "$postgrestUrl/streakLog";
+            $usersMissingStreakFunctionUrl = "$postgrestUrl/rpc/users_missing_streak";
+            $baseUrlMilestones = "$postgrestUrl/milestones";
+            $baseUrlUserMilestones = "$postgrestUrl/userMilestones";
+            $usersEligibleForMilestoneTomorrowFunctionUrl = "$postgrestUrl/rpc/get_eligible_users_for_tomorrow_milestone";
+            $notificationLogUrl = "$postgrestUrl/notificationLog";
+            $notificationTableUrl = "$postgrestUrl/notifications";
             $today = $_GET['mock_date'] ?? date('Y-m-d');
             $usersToNotify = getUsersForStreakNotification($usersMissingStreakFunctionUrl, $userTableUrl, $streakLogTableUrl, $headers, $appname, $today);
             // echo json_encode($usersToNotify);exit;
@@ -860,14 +861,14 @@
         case "admin-send-notification-tomorrow-milestone-eligible-users":
             // Get users who would be eligible for a milestone by logging tomorrow's streak
             $appname = $_GET['appname'] ?? null; // Optional: filter by specific app
-            $userTableUrl = "https://$projectId.supabase.co/rest/v1/users";
-            $streakLogTableUrl = "https://$projectId.supabase.co/rest/v1/streakLog";
-            $usersMissingStreakFunctionUrl = "https://$projectId.supabase.co/rest/v1/rpc/users_missing_streak";
-            $baseUrlMilestones = "https://$projectId.supabase.co/rest/v1/milestones";
-            $baseUrlUserMilestones = "https://$projectId.supabase.co/rest/v1/userMilestones";
-            $usersEligibleForMilestoneTomorrowFunctionUrl = "https://$projectId.supabase.co/rest/v1/rpc/get_eligible_users_for_tomorrow_milestone";
-            $notificationLogUrl = "https://$projectId.supabase.co/rest/v1/notificationLog";
-            $notificationTableUrl = "https://$projectId.supabase.co/rest/v1/notifications";
+            $userTableUrl = "$postgrestUrl/users";
+            $streakLogTableUrl = "$postgrestUrl/streakLog";
+            $usersMissingStreakFunctionUrl = "$postgrestUrl/rpc/users_missing_streak";
+            $baseUrlMilestones = "$postgrestUrl/milestones";
+            $baseUrlUserMilestones = "$postgrestUrl/userMilestones";
+            $usersEligibleForMilestoneTomorrowFunctionUrl = "$postgrestUrl/rpc/get_eligible_users_for_tomorrow_milestone";
+            $notificationLogUrl = "$postgrestUrl/notificationLog";
+            $notificationTableUrl = "$postgrestUrl/notifications";
             $mock_date = $_GET['mock_date'] ?? null; // Optional: mock date for testing
             $milestoneEligibleUsers = getUsersEligibleForMilestoneTomorrow($usersEligibleForMilestoneTomorrowFunctionUrl, $userTableUrl, $streakLogTableUrl, $baseUrlMilestones, $baseUrlUserMilestones, $headers, $appname, $mock_date);
             // echo json_encode($milestoneEligibleUsers);exit;
@@ -876,15 +877,15 @@
         break;
         case "admin-send-mock-notification":
             // Send mock notifications
-            $userTableUrl = "https://$projectId.supabase.co/rest/v1/users";
-            // $streakLogTableUrl = "https://$projectId.supabase.co/rest/v1/streakLog";
-            $streaksTableUrl = "https://$projectId.supabase.co/rest/v1/streaks";
-            // $usersMissingStreakFunctionUrl = "https://$projectId.supabase.co/rest/v1/rpc/users_missing_streak";
-            $baseUrlMilestones = "https://$projectId.supabase.co/rest/v1/milestones";
-            // $baseUrlUserMilestones = "https://$projectId.supabase.co/rest/v1/userMilestones";
-            // $usersEligibleForMilestoneTomorrowFunctionUrl = "https://$projectId.supabase.co/rest/v1/rpc/get_eligible_users_for_tomorrow_milestone";
-            $notificationLogUrl = "https://$projectId.supabase.co/rest/v1/notificationLog";
-            $notificationTableUrl = "https://$projectId.supabase.co/rest/v1/notifications";
+            $userTableUrl = "$postgrestUrl/users";
+            // $streakLogTableUrl = "$postgrestUrl/streakLog";
+            $streaksTableUrl = "$postgrestUrl/streaks";
+            // $usersMissingStreakFunctionUrl = "$postgrestUrl/rpc/users_missing_streak";
+            $baseUrlMilestones = "$postgrestUrl/milestones";
+            // $baseUrlUserMilestones = "$postgrestUrl/userMilestones";
+            // $usersEligibleForMilestoneTomorrowFunctionUrl = "$postgrestUrl/rpc/get_eligible_users_for_tomorrow_milestone";
+            $notificationLogUrl = "$postgrestUrl/notificationLog";
+            $notificationTableUrl = "$postgrestUrl/notifications";
             $today = $_GET['mock_date'] ?? date('Y-m-d');
             $userId = $_GET['userId'] ?? '';
             $notificationId = $_GET['notifID'] ?? '';
@@ -900,8 +901,8 @@
         break;
         case "admin-create-notifications":
             $appId = $_GET['appId'] ?? '';
-            $baseUrlApps = "https://$projectId.supabase.co/rest/v1/apps";
-            $baseUrlNotifications = "https://$projectId.supabase.co/rest/v1/notifications";
+            $baseUrlApps = "$postgrestUrl/apps";
+            $baseUrlNotifications = "$postgrestUrl/notifications";
 
             $appData = getAppData($baseUrlApps, $headers, $appId);
 
