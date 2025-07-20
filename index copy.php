@@ -1,27 +1,14 @@
 <?php
-    if (isset($_GET['debug'])) {
+    if (strpos($_SERVER['HTTP_HOST'], 'localhost') !== false || isset($_GET['debug'])) {
         ini_set('display_errors', 1);
         ini_set('display_startup_errors', 1);
         error_reporting(E_ALL);
-        // echo "error on";
     } else {
-        error_reporting(E_ALL & ~E_DEPRECATED & ~E_WARNING); // Hide deprecated + warnings
+        // On staging/production: hide error
         ini_set('display_errors', 0);
-        // echo "error off";
+        error_reporting(0);
     }
-    header("Access-Control-Allow-Origin: *");
-
-    // Allow specific methods
-    header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
-
-    // Allow headers
-    header("Access-Control-Allow-Headers: Content-Type, Authorization");
-
-    // Handle preflight requests
-    if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-        http_response_code(200);
-        exit();
-    }
+    header('Access-Control-Allow-Origin: *');
     header('Content-Type: application/json');
 
     // echo file_get_contents("php://input");exit;
@@ -56,6 +43,176 @@
         case "app-health-check":
             echo json_encode(array("status" => "success", "message" => "Health check running"));
             break;
+
+        // Admin streaks
+        case "admin-store-notification":
+            echo "test";exit;
+            // Store notification
+
+            $curl = curl_init();
+
+            curl_setopt_array($curl, array(
+                CURLOPT_URL => 'https://us-central1-riafy-public.cloudfunctions.net/genesis?otherFunctions=dexDirect&type=r10-apps-ftw',
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_ENCODING => '',
+                CURLOPT_MAXREDIRS => 10,
+                CURLOPT_TIMEOUT => 0,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                CURLOPT_CUSTOMREQUEST => 'POST',
+                CURLOPT_POSTFIELDS =>'{
+                    "ask-dex": "qvj7MATCj1IIq4DoN0L0RCREve3qwDUyUadyRFx/hH0F8mPQZi8yJVTH+yA4HOno0aUXfvWBO+Pyyg5Ixt33Omtf2AwMJlwOrREfK9h2cFjOalyIIbmqtN54spxf3R9VaKe3RMhJL8/bp5EVIZaBBuEn3ftK5cc6OJCb7K2Y+BckhcuvbMvruUwTZoHIi0MVwmpB8FBFS6j+8uC75Rrxd9Ipy6Y0W5zIDRd2p/d6Y/CTuqnDUZQ5V0aDqZnkXduWoAVU63jBpPixOEd+vZZxW30c683hL+zpZtqv1THC+u84PNsAlpvfoflfE68JHPr3/tyvPytPF+UErgzRA/BDn0U/YcoKtDCLqhRgoJZCpDLUPNamROv6da97NMJD9Ox4RZrV8Jr2dTWJ9gtq81wUtZpFaglaEYAwOZMSZtdKwidVmkEAgakGohDERk9W3PS5bSDoO2Iwa6Hy5qaXEYMiYZkDW8ACGkpjmFlDu1nZjiv6a5Q1LbbRvYnCl/eRnhMFkowK7DirMB4Jvf9fcZzenVDjV5V4y5J4mVHvSIxHgW2yhsZ5R/tNkxLE9Uwit4t8bKQ2U5A5Z6yzMevNyrcJDqeTT9+f42QnxObYycxObRY0wOwK4JjmBArDdkwZZ9RvYHgeLA1Ey8iEKOyRP3jF9DBgvsYS8FTT8olYxwqFY+UJjdVNInahKg5mnc5xH7BTELZi2NXYiXNYjEqmj3qhfSvWbnu2UHVQPlPfwYHBNVCc2dsQXm93hp2uNs8qQ3Su3X8/6FEwCSkT85bnl1EAYqqCu4/O/6mPhTdzHyc9IKvpGFfNyGNBWNlf8C5P+p6FzX4BtDUujI4P8VLyOnuiE/zmFLca9NS3KueO3lLG01YXWEcQjsW2ei0adCzD46bSBnmtNGyDXiMC+whRmpqBNFYQRiq3mAi+UuUzXAnwbs4MDL4Q+Xgoh3QIHnOW/Fq2vyhtxujuBxM7DGhgJClN1W6RSPSCJxYZX2pfbqqjcmrTZS15HEfZmd/Wt8ghpNX1edA1b+G6DLHLnHpZMMb3ek73seK+JEd7XOsj2sZhKYw=",
+                    "appname": "acd",
+                    "ogQuery": "{\\n  \\"apps\\": [\\n    {\\n      \\"appid\\": \\"keto.weightloss.diet.plan\\",\\n      \\"app_name\\": \\"Keto Diet Tracker: Manage Carb\\"\\n    }\\n  ],\\n  \\"notification count\\": \\"4 for each types\\",\\n  \\"languages\\": \\"en,fr,it,de\\"\\n}",
+                    "reply-mode": "json"
+                }',
+                CURLOPT_HTTPHEADER => array(
+                    'Content-Type: application/json'
+                ),
+            ));
+
+            $response = curl_exec($curl);
+            $resp = json_decode($response, true);
+            echo json_encode($resp);
+            // exit;
+
+            curl_close($curl);
+            foreach ($resp['data']["notifications"] as $appname => $notifications) {
+                foreach ($notifications as $notification) {
+                    foreach ($notification as $lang => $localisation) {
+                        $notificationTableUrl = "https://$projectId.supabase.co/rest/v1/notifications";
+                        $notificationData = array(
+                            "title" => $localisation['title'],
+                            "subtitle" => $localisation['subtitle'],
+                            "type" => $localisation['type'],
+                            "appname" => $appname,
+                            "lang" => $lang
+                        );
+                        $storeNotification = storeNotificationData($notificationTableUrl, $headers, $notificationData);
+                        // echo json_encode($storeNotification);exit;
+                    }
+                }
+            }
+        break;
+        // // Admin streaks
+        // case "admin-get-all-streaks":
+        //     // Read all streaks admin
+        //     $baseUrl = "https://$projectId.supabase.co/rest/v1/streaks";
+        //     $allStreaksAdmin = getAllStreaksAdmin($baseUrl, $headers);
+        //     echo json_encode($allStreaksAdmin);
+        // break;
+        // case "admin-insert-streak":
+        //     // Insert streak admin
+        //     $baseUrl = "https://$projectId.supabase.co/rest/v1/streaks";
+        //     $exists = checkStreakExists($baseUrl, $headers, array('sku' => $inputPayload['sku']));
+        //     if ($exists) {
+        //         http_response_code(403);
+        //         echo json_encode(array("status" => "error", "message" => "Streak already exist with the same sku"));
+        //         exit;
+        //     } else {
+        //         $translatedArr = array();
+        //         foreach($langs as $lang){
+        //             $translatedArr[$lang]['name'] = translateText($inputPayload['name'], $lang);
+        //             $translatedArr[$lang]['description'] = translateText($inputPayload['description'], $lang);
+        //         }
+        //         $payloadToInsert = $inputPayload;
+        //         $payloadToInsert['localizations'] = json_encode($translatedArr);
+        //         $new = insertStreakAdmin($baseUrl, $headers, $payloadToInsert);
+        //         echo json_encode(array("status" => "success", "message" => "Streak inserted succcesfully", "response" => $new));
+        //     }
+        // break;
+        // case "admin-update-streak":
+        //     // Update streak admin
+        //     $baseUrl = "https://$projectId.supabase.co/rest/v1/streaks";
+        //     $id = $inputPayload['id'];
+        //     $exists = checkStreakExists($baseUrl, $headers, array('sku' => $inputPayload['sku'], 'id' => ['not.eq' => $id]));
+        //     if ($exists) {
+        //         http_response_code(403);
+        //         echo json_encode(array("status" => "error", "message" => "Another streak exist with the same sku"));
+        //         exit;
+        //     } else {
+        //         $translatedArr = array();
+        //         foreach($langs as $lang){
+        //             $translatedArr[$lang]['name'] = translateText($inputPayload['name'], $lang);
+        //             $translatedArr[$lang]['description'] = translateText($inputPayload['description'], $lang);
+        //         }
+        //         $payloadToInsert = $inputPayload;
+        //         $payloadToInsert['localizations'] = json_encode($translatedArr);
+        //         $new = updateStreakAdmin($baseUrl, $headers, $id, $payloadToInsert);
+        //         echo json_encode(array("status" => "success", "message" => "Streak updated succcesfully", "response" => $new));
+        //     }
+        // break;
+        // case "admin-delete-streak":
+        //     // Delete streak admin
+        //     $baseUrl = "https://$projectId.supabase.co/rest/v1/streaks";
+        //     $id = $_GET['id'];
+        //     $new = deleteStreakAdmin($baseUrl, $headers, $id);
+        //     echo json_encode(array("status" => "success", "message" => "Streak deleted succesfully"));
+        // break;
+
+        // // Admin milestones
+        // case "admin-get-all-milestones":
+        //     // Read all milestones admin
+        //     $baseUrl = "https://$projectId.supabase.co/rest/v1/milestones";
+        //     $allMilestonesAdmin = getAllMilestonesAdmin($baseUrl, $headers);
+        //     echo json_encode($allMilestonesAdmin);
+        // break;
+        // case "admin-insert-milestone":
+        //     // Insert milestone admin
+        //     $baseUrl = "https://$projectId.supabase.co/rest/v1/milestones";
+        //     $exists = checkMilestoneExists($baseUrl, $headers, array('sku' => $inputPayload['sku'], 'streakSku' => $inputPayload['streakSku'], 'streakId' => $inputPayload['streakId']));
+        //     if ($exists) {
+        //         http_response_code(403);
+        //         echo json_encode(array("status" => "error", "message" => "Milestone already exist with the same sku"));
+        //         exit;
+        //     } else {
+        //         $translatedArr = array();
+        //         foreach($langs as $lang){
+        //             $translatedArr[$lang]['name'] = translateText($inputPayload['name'], $lang);
+        //             $translatedArr[$lang]['description'] = translateText($inputPayload['description'], $lang);
+        //         }
+        //         $payloadToInsert = $inputPayload;
+        //         $payloadToInsert['localizations'] = json_encode($translatedArr);
+        //         $baseUrlStorage = "https://$projectId.supabase.co";
+        //         $bucket = "firestorm";
+        //         $imageUrl = uploadImageToStorage($baseUrlStorage, $apiKey, $bucket, $inputPayload['sku'], $inputPayloadFiles);
+        //         $payloadToInsert['imageColoredUrl'] = $imageUrl;
+        //         $new = insertMilestoneAdmin($baseUrl, $headers, $payloadToInsert);
+        //         echo json_encode(array("status" => "success", "message" => "Milestone inserted succcesfully", "response" => $new));
+        //     }
+        // break;
+        // case "admin-update-milestone":
+        //     // Update milestone admin
+        //     $baseUrl = "https://$projectId.supabase.co/rest/v1/milestones";
+        //     $id = $inputPayload['id'];
+        //     $exists = checkMilestoneExists($baseUrl, $headers, array('sku' => $inputPayload['sku'], 'streakSku' => $inputPayload['streakSku'], 'streakId' => $inputPayload['streakId'], 'id' => ['not.eq' => $id]));
+        //     if ($exists) {
+        //         http_response_code(403);
+        //         echo json_encode(array("status" => "error", "message" => "Another milestone exist with the same sku"));
+        //         exit;
+        //     } else {
+        //         $translatedArr = array();
+        //         foreach($langs as $lang){
+        //             $translatedArr[$lang]['name'] = translateText($inputPayload['name'], $lang);
+        //             $translatedArr[$lang]['description'] = translateText($inputPayload['description'], $lang);
+        //         }
+        //         $payloadToInsert = $inputPayload;
+        //         $payloadToInsert['localizations'] = json_encode($translatedArr);
+        //         $baseUrlStorage = "https://$projectId.supabase.co";
+        //         $bucket = "firestorm";
+        //         $imageUrl = uploadImageToStorage($baseUrlStorage, $apiKey, $bucket, $inputPayload['sku'], $inputPayloadFiles);
+        //         $payloadToInsert['imageColoredUrl'] = $imageUrl;
+        //         $new = updateMilestoneAdmin($baseUrl, $headers, $id, $payloadToInsert);
+        //         echo json_encode(array("status" => "success", "message" => "Milestone updated succcesfully", "response" => $new));
+        //     }
+        // break;
+        // case "admin-delete-milestone":
+        //     // Delete milestone admin
+        //     $baseUrl = "https://$projectId.supabase.co/rest/v1/milestones";
+        //     $id = $inputPayload['id'];
+        //     $new = deleteMilestoneAdmin($baseUrl, $headers, $id);
+        //     echo json_encode(array("status" => "success", "message" => "Milestone deleted succesfully"));
+        // break;
 
         // APIs for app
         case "app-log-a-streak":
@@ -571,6 +728,69 @@
                 "is_paused" => $isCurrentlyPaused,
                 // "pause_start_date" => $pauseStartDate
             ));
+            
+            exit;
+
+
+
+
+
+            // Read all streaks for an app
+            $baseUrlStreaks = "https://$projectId.supabase.co/rest/v1/streaks";
+            $allStreaksApp = getAllStreaksApp($baseUrlStreaks, $headers, array('appname' => $_GET['appname']));
+
+            $baseUrlStreakLogs = "https://$projectId.supabase.co/rest/v1/streakLog";
+            $allStreakLogsApp = getAllStreakLogsApp($baseUrlStreakLogs, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId']));
+
+            $maxCounts = [];
+            foreach ($allStreakLogsApp as $log) {
+                $sku = $log['streakSku'];
+                $count = (int)$log['count'];
+                if (!isset($maxCounts[$sku]) || $count > $maxCounts[$sku]) {
+                    $maxCounts[$sku] = $count;
+                }
+            }
+
+            $allStreaks = array_map(function ($streak) use ($maxCounts) {
+                $streak['longestStreak'] = $maxCounts[$streak['sku']] ?? 0;
+                return $streak;
+            }, $allStreaksApp);
+
+            $allStreaks = array_map(function($streak) {
+                unset($streak['localizations']);
+                return $streak;
+            }, $allStreaks);
+
+            $baseUrlMilestones = "https://$projectId.supabase.co/rest/v1/milestones";
+            $allMilestonesApp = getAllMilestonesApp($baseUrlMilestones, $headers, $_GET['appname']);
+            if(isset($_GET['lang']) && $_GET['lang'] != "en"){
+                $i = 0;
+                foreach ($allMilestonesApp as $milestone) {
+                    if (!empty($milestone['localizations'])) {
+                        $localizations = json_decode($milestone['localizations'], true);
+                        if (isset($localizations[$_GET['lang']])) {
+                            $allMilestonesApp[$i]['name'] = $localizations[$_GET['lang']]['name'];
+                            $allMilestonesApp[$i]['description'] = $localizations[$_GET['lang']]['description'];
+                        }
+                    }
+                    $i++;
+                }
+            }
+            $allMilestonesApp = array_map(function($milestone) {
+                unset($milestone['localizations']);
+                return $milestone;
+            }, $allMilestonesApp);
+
+            $baseUrlStreaks = "https://$projectId.supabase.co/rest/v1/userMilestones";
+            $allAchievedMilestonesOfUser = getAllAchievedMilestonesOfUser($baseUrlStreaks, $headers, array('appname' => $_GET['appname'], 'userId' => $_GET['userId']));
+            $completedIds = array_column($allAchievedMilestonesOfUser, 'milestoneId');
+            $milestones = array_map(function ($item) use ($completedIds) {
+                $item['isCompleted'] = in_array((string)$item['id'], $completedIds) ? "1" : "0";
+                return $item;
+            }, $allMilestonesApp);
+            usort($milestones, fn($a, $b) => $b['isCompleted'] <=> $a['isCompleted']);
+
+            echo json_encode(array("streaks" => $allStreaks, "milestones" => $milestones));
         break;
         case "app-clear-all-data":
             // Clear all streak data of user
@@ -805,11 +1025,6 @@
 
             $baseUrlMilestones = "https://$projectId.supabase.co/rest/v1/milestones";
             $checkAnyMilestoneExist = checkAnyMilestoneExist($baseUrlMilestones, $headers, array('streakSku' => $streakSku, 'streakCount' => $count, 'appname' => $_GET['appname']));
-            
-            // Fetch notification from table
-            $notificationTableUrl = "https://$projectId.supabase.co/rest/v1/notifications";
-            $notification = getNotificationFromTable($notificationTableUrl, $headers, $_GET['appname'], $lang, 'streak_break');
-            
             if ($checkAnyMilestoneExist) {
                 $baseUrlUserMilestones = "https://$projectId.supabase.co/rest/v1/userMilestones";
                 $checkAnyMilestoneExistIsAchieved = checkAnyMilestoneExistIsAchieved($baseUrlUserMilestones, $headers, array('milestoneSku' => $checkAnyMilestoneExist[0]['sku'], 'appname' => $_GET['appname'], "userId" => $_GET['userId']));
@@ -830,14 +1045,15 @@
                         $checkAnyMilestoneExist[0]["description"] = $checkAnyMilestoneExist[0]['description'];
                     }
                     $newMilestone = addNewUserMilestones($baseUrlUserMilestones, $headers, $insertUserMileStonePayload);
-                    echo json_encode(array("status" => "success", "message" => "Streak logged succesfully", "milestone" => $checkAnyMilestoneExist[0], "notification" => $notification));
+                    // echo json_encode(array("status" => "success", "message" => "Streak logged succesfully", "milestone" => $checkAnyMilestoneExist[0], "user" => $user));
+                    echo json_encode(array("status" => "success", "message" => "Streak logged succesfully", "milestone" => $checkAnyMilestoneExist[0]));
                 }
                 else{
-                    echo json_encode(array("status" => "success", "message" => "Streak logged succesfully", "notification" => $notification));
+                    echo json_encode(array("status" => "success", "message" => "Streak logged succesfully"));
                 }
             }
             else{
-                echo json_encode(array("status" => "success", "message" => "Streak logged succesfully", "notification" => $notification));
+                echo json_encode(array("status" => "success", "message" => "Streak logged succesfully"));
             }
         break;
         case "admin-send-notification":
@@ -896,49 +1112,193 @@
         case "admin-get-a-env-var":
             $key = $_GET['key'] ?? '';
             $value = getenv($key);
-            echo "env value: " . $value;exit;
+            echo $value;exit;
         break;
         case "admin-create-notifications":
             $appId = $_GET['appId'] ?? '';
-            $baseUrlApps = "https://$projectId.supabase.co/rest/v1/apps";
-            $baseUrlNotifications = "https://$projectId.supabase.co/rest/v1/notifications";
-
-            $appData = getAppData($baseUrlApps, $headers, $appId);
-
-            // Store notification
-
-            $count_per_type = 3;
-            $language_list = "en,fr,de,es,it";
-            $notification_askDex = "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";
-            $notification_ogQuery = "Appname:" . $appData['sku'] . ", count per type: " . $count_per_type . ", languages: " . $language_list;
-
-            $generatedNotificationsJson = generateNotificationAcd($baseUrlNotifications, $headers, $notification_askDex, $notification_ogQuery);
-            $generatedNotificationsDecoded = json_decode($generatedNotificationsJson, true);
-            $generatedNotifications = !empty($generatedNotificationsDecoded) ? $generatedNotificationsDecoded['data']['notifications'] : false;
-            // echo $generatedNotificationsJson;exit;
-            // exit;
-            if(!empty($generatedNotifications)){
-                foreach ($generatedNotifications as $eachNotification) {
-                    $notificationData = array(
-                        "title" => $eachNotification['title'],
-                        "subtitle" => $eachNotification['message'],
-                        "type" => $eachNotification['type'],
-                        "appname" => $appId,
-                        "lang" => $eachNotification['lang']
-                    );
-                    // echo json_encode($notificationData);
-                    $storeNotification = storeNotificationData($baseUrlNotifications, $headers, $notificationData);
-                }
-                echo json_encode(array("status" => "success", "message" => "Notification generation completed"));
-            }
-            else{
-                http_response_code(503);
-                echo json_encode(array("status" => "error", "message" => "Notification generation failed"));
-            }
+            echo json_encode(array("status" => "pending", "message" => "Notifications integration on progress", "appId" => $appId));
         break;
         default:
             http_response_code(401);
             echo json_encode(array("status" => "error", "message" => "No method choosed"));
+    }
+
+    // Functions for admin streaks
+
+    function getAllStreaksAdmin($url, $headers) {
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, "$url?select=*");
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        $res = curl_exec($ch);
+        curl_close($ch);
+        return json_decode($res, true);
+    }
+
+    // 🟡 2. INSERT row (POST)
+    function insertStreakAdmin($url, $headers, $data) {
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+        $res = curl_exec($ch);
+        curl_close($ch);
+        return json_decode($res, true);
+    }
+
+    // 🟠 3. UPDATE row (PATCH by id)
+    function updateStreakAdmin($url, $headers, $id, $data) {
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, "$url?id=eq.$id");
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PATCH");
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+        $res = curl_exec($ch);
+        curl_close($ch);
+        return json_decode($res, true);
+    }
+
+    // 🔴 4. DELETE row (by id)
+    function deleteStreakAdmin($url, $headers, $id) {
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, "$url?id=eq.$id");
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "DELETE");
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        $res = curl_exec($ch);
+        curl_close($ch);
+        return $res;
+    }
+
+    function checkStreakExists($url, $headers, $filters) {
+        foreach ($filters as $key => $value) {
+            if (is_array($value)) {
+                foreach ($value as $operator => $v) {
+                    $queryParts[] = "$key=" . $operator . "." . urlencode($v);
+                }
+            } else {
+                $queryParts[] = "$key=eq." . urlencode($value);
+            }
+        }
+        $queryUrl = "$url?" . implode('&', $queryParts);
+        $queryUrl = str_replace(" ", "%20", $queryUrl);
+    
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $queryUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        $response = curl_exec($ch);
+        curl_close($ch);
+    
+        $data = json_decode($response, true);
+        return !empty($data) ? $data : false;
+    }
+
+
+    // Function for admin milestones
+
+    function getAllMilestonesAdmin($url, $headers) {
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, "$url?select=*");
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        $res = curl_exec($ch);
+        curl_close($ch);
+        return json_decode($res, true);
+    }
+
+    // 🟡 2. INSERT row (POST)
+    function insertMilestoneAdmin($url, $headers, $data) {
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+        $res = curl_exec($ch);
+        curl_close($ch);
+        return json_decode($res, true);
+    }
+
+    // 🟠 3. UPDATE row (PATCH by id)
+    function updateMilestoneAdmin($url, $headers, $id, $data) {
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, "$url?id=eq.$id");
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PATCH");
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+        $res = curl_exec($ch);
+        curl_close($ch);
+        return json_decode($res, true);
+    }
+
+    // 🔴 4. DELETE row (by id)
+    function deleteMilestoneAdmin($url, $headers, $id) {
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, "$url?id=eq.$id");
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "DELETE");
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        $res = curl_exec($ch);
+        curl_close($ch);
+        return $res;
+    }
+
+    function checkMilestoneExists($url, $headers, $filters) {
+        foreach ($filters as $key => $value) {
+            if (is_array($value)) {
+                foreach ($value as $operator => $v) {
+                    $queryParts[] = "$key=" . $operator . "." . urlencode($v);
+                }
+            } else {
+                $queryParts[] = "$key=eq." . urlencode($value);
+            }
+        }
+        $queryUrl = "$url?" . implode('&', $queryParts);
+        $queryUrl = str_replace(" ", "%20", $queryUrl);
+    
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $queryUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        $response = curl_exec($ch);
+        curl_close($ch);
+    
+        $data = json_decode($response, true);
+        return !empty($data) ? $data : false;
+    }
+
+    function translateText($q, $tl){
+        $translatedtext = $q;
+        $curl = curl_init();
+        curl_setopt_array($curl, array(
+            CURLOPT_URL => 'https://us-central1-riafy-public.cloudfunctions.net/genesis?otherFunctions=dexDirect&type=r10-apps-ftw',
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => '',
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 0,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => 'POST',
+            CURLOPT_POSTFIELDS =>'{
+                "query": "{\\"source_lang\\": \\"en\\", \\"target_lang\\": \\"' . $tl . '\\", \\"source_text\\": \\"' . $q . '\\"}",
+                "appname": "translate"
+            }',
+            CURLOPT_HTTPHEADER => array(
+                'Content-Type: application/json'
+            ),
+        ));
+        $response = curl_exec($curl);
+        curl_close($curl);
+        $responseDecoded = json_decode($response, true);
+        if(isset($responseDecoded['data']['translated_text']) && $responseDecoded['data']['translated_text'] != ''){
+            $translatedtext = $responseDecoded['data']['translated_text'];
+        }
+        return $translatedtext;
     }
 
     // Log streak
@@ -3348,45 +3708,4 @@
         $serviceAccountData = json_decode(file_get_contents($serviceAccountPath), true);
         return $serviceAccountData;
     }
-
-    function getAppData($baseUrlApps, $headers, $appId){
-        $queryUrl = $baseUrlApps . "?sku=eq." . urlencode($appId);
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $queryUrl);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-        $response = curl_exec($ch);
-        curl_close($ch);
-    
-        $data = json_decode($response, true);
-        return !empty($data) ? $data[0] : false;
-    }
-
-    function generateNotificationAcd($baseUrlNotifications, $headers, $notification_askDex, $notification_ogQuery){
-        $curl = curl_init();
-
-        curl_setopt_array($curl, array(
-            CURLOPT_URL => 'https://us-central1-riafy-public.cloudfunctions.net/genesis?otherFunctions=dexDirect&type=r10-apps-ftw',
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_ENCODING => '',
-            CURLOPT_MAXREDIRS => 10,
-            CURLOPT_TIMEOUT => 0,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-            CURLOPT_CUSTOMREQUEST => 'POST',
-            CURLOPT_POSTFIELDS =>'{
-                "ask-dex": "' . $notification_askDex . '",
-                "appname": "acd",
-                "ogQuery": "' . $notification_ogQuery . '",
-                "reply-mode": "json"
-            }',
-            CURLOPT_HTTPHEADER => array(
-                'Content-Type: application/json'
-            ),
-        ));
-
-        $response = curl_exec($curl);
-        return $response;
-    }
-
 ?>
